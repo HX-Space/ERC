@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: er-postgres
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: er
+      POSTGRES_PASSWORD: er_local_dev
+      POSTGRES_DB: employee_relations
+    volumes:
+      - er_pg_data:/var/lib/postgresql/data
+
+volumes:
+  er_pg_data:
