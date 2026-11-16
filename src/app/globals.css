@@ -126,7 +126,7 @@ body {
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-body), var(--font-arabic), system-ui, sans-serif;
   font-size: 14px;
   line-height: 20px;
   letter-spacing: 0;
@@ -136,7 +136,7 @@ body {
 h1,
 h2,
 h3 {
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-body), var(--font-arabic), system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: -0.005em;
   text-wrap: balance;
@@ -161,6 +161,11 @@ h2 {
 }
 
 @layer base {
+  /* Header cells follow the table's alignment (start/end too, so RTL mirrors). */
+  th {
+    text-align: inherit;
+  }
+
   a {
     text-decoration: none;
     color: inherit;
@@ -225,7 +230,7 @@ h2 {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
+  text-align: start;
 }
 
 .data-table thead th {
@@ -325,4 +330,29 @@ textarea.field-control {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Rich-text outcomes (editor and read-only view) */
+.rich-text { font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.rich-text p { margin: 0; }
+.rich-text p + p { margin-top: 0.35em; }
+.rich-text ul, .rich-text ol { margin: 0.25em 0; padding-inline-start: 1.4em; }
+.rich-text ul { list-style: disc; }
+.rich-text ol { list-style: decimal; }
+.rich-text ul[data-type="taskList"] { list-style: none; padding-inline-start: 0.1em; }
+.rich-text ul[data-type="taskList"] > li { display: flex; align-items: flex-start; gap: 0.5em; }
+.rich-text ul[data-type="taskList"] > li > label { flex: none; margin-top: 0.2em; }
+.rich-text ul[data-type="taskList"] > li > label > input { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+.rich-text ul[data-type="taskList"] > li > div { flex: 1; min-width: 0; }
+.rich-text li[data-checked="true"] > div { color: var(--muted); text-decoration: line-through; }
+.rich-text .is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--faint); float: inline-start; height: 0; pointer-events: none; }
+.rich-text-view ul[data-type="taskList"] > li > label > input { pointer-events: none; cursor: default; }
+
+/* Arabic UI: Arabic face first, no negative tracking on Arabic script */
+html[lang="ar"] body,
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3 {
+  font-family: var(--font-arabic), var(--font-body), system-ui, sans-serif;
+  letter-spacing: 0;
 }

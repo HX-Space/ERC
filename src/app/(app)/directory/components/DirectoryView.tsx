@@ -14,6 +14,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { useToast } from "@/components/ui/toast";
+import { useT } from "@/components/i18n/lang";
 import type { EmployeeRecord, ManagerRecord } from "@/types";
 
 type Sheet = "import" | "manager" | "employee" | null;
@@ -47,6 +48,7 @@ export function DirectoryView({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useT();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [busy, setBusy] = useState(false);
   const [csv, setCsv] = useState("");
@@ -84,46 +86,53 @@ export function DirectoryView({
     return true;
   }
 
+  const statusLabel = (s: string) => (s === "Active" ? t("Active", "نشط") : t("Inactive", "غير نشط"));
+
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>Directory</h1>
+          <h1>{t("Directory", "الدليل")}</h1>
           <p>
-            {employees.length} employees · {managers.length} managers. The employee code is the
-            permanent key used in meetings and feedback.
+            {t(
+              `${employees.length} employees · ${managers.length} managers. The employee code is the permanent key used in meetings and feedback.`,
+              `${employees.length} موظف · ${managers.length} مدير. رمز الموظف هو المفتاح الدائم المستخدم في الاجتماعات والملاحظات.`,
+            )}
           </p>
         </div>
         {isAdmin ? (
           <div className="flex flex-wrap gap-2">
-            <Button aria-label="Import directory from CSV" onClick={() => setSheet("import")}>
+            <Button
+              aria-label={t("Import directory from CSV", "استيراد الدليل من ملف CSV")}
+              onClick={() => setSheet("import")}
+            >
               <Upload />
-              Import CSV
+              {t("Import CSV", "استيراد CSV")}
             </Button>
-            <Button aria-label="Add manager" onClick={() => setSheet("manager")}>
+            <Button aria-label={t("Add manager", "إضافة مدير")} onClick={() => setSheet("manager")}>
               <UserPlus />
-              Add manager
+              {t("Add manager", "إضافة مدير")}
             </Button>
             <Button
               variant="primary"
-              aria-label="Add employee"
+              aria-label={t("Add employee", "إضافة موظف")}
               onClick={() => {
                 setEmp({ ...emptyEmployee, managerCode: managers[0]?.code ?? "" });
                 setSheet("employee");
               }}
             >
               <Plus />
-              Add employee
+              {t("Add employee", "إضافة موظف")}
             </Button>
           </div>
         ) : null}
       </header>
 
       <Panel>
-        <PanelHeader title="People">
+        <PanelHeader title={t("People", "الأشخاص")}>
           <input
-            aria-label="Search directory"
-            placeholder="Search name, code, team or manager"
+            aria-label={t("Search directory", "البحث في الدليل")}
+            placeholder={t("Search name, code, team or manager", "ابحث بالاسم أو الرمز أو الفريق أو المدير")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className={`${input} max-w-[300px]`}
@@ -132,10 +141,16 @@ export function DirectoryView({
         {employees.length === 0 ? (
           <div className="px-5 pb-5">
             <p className="rounded-[8px] border border-dashed border-line-2 px-4 py-3 text-[14px] text-muted">
-              No employees yet.{" "}
+              {t("No employees yet.", "لا يوجد موظفون بعد.")}{" "}
               {isAdmin
-                ? "Import your directory as a CSV, or add managers and employees one by one."
-                : "An administrator needs to import the directory before meetings can be recorded."}
+                ? t(
+                    "Import your directory as a CSV, or add managers and employees one by one.",
+                    "استورد الدليل كملف CSV، أو أضف المديرين والموظفين واحداً تلو الآخر.",
+                  )
+                : t(
+                    "An administrator needs to import the directory before meetings can be recorded.",
+                    "يحتاج مسؤول إلى استيراد الدليل قبل تسجيل الاجتماعات.",
+                  )}
             </p>
           </div>
         ) : (
@@ -143,14 +158,14 @@ export function DirectoryView({
             <table className="data-table min-w-[900px]">
               <thead>
                 <tr>
-                  <th>Code</th>
-                  <th>Name</th>
-                  <th>Title</th>
-                  <th>Department</th>
-                  <th>Unit</th>
-                  <th>Team</th>
-                  <th>Manager</th>
-                  <th>Status</th>
+                  <th>{t("Code", "الرمز")}</th>
+                  <th>{t("Name", "الاسم")}</th>
+                  <th>{t("Title", "المسمى الوظيفي")}</th>
+                  <th>{t("Department", "القسم")}</th>
+                  <th>{t("Unit", "الوحدة")}</th>
+                  <th>{t("Team", "الفريق")}</th>
+                  <th>{t("Manager", "المدير")}</th>
+                  <th>{t("Status", "الحالة")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -169,7 +184,11 @@ export function DirectoryView({
                       {isAdmin ? (
                         <button
                           type="button"
-                          aria-label={`Mark ${e.name} ${e.status === "Active" ? "inactive" : "active"}`}
+                          aria-label={
+                            e.status === "Active"
+                              ? t(`Mark ${e.name} inactive`, `تعطيل ${e.name}`)
+                              : t(`Mark ${e.name} active`, `تفعيل ${e.name}`)
+                          }
                           className="cursor-pointer"
                           onClick={() =>
                             run(() =>
@@ -177,10 +196,10 @@ export function DirectoryView({
                             )
                           }
                         >
-                          <Pill tone={e.status === "Active" ? "ok" : "mute"}>{e.status}</Pill>
+                          <Pill tone={e.status === "Active" ? "ok" : "mute"}>{statusLabel(e.status)}</Pill>
                         </button>
                       ) : (
-                        <Pill tone={e.status === "Active" ? "ok" : "mute"}>{e.status}</Pill>
+                        <Pill tone={e.status === "Active" ? "ok" : "mute"}>{statusLabel(e.status)}</Pill>
                       )}
                     </td>
                   </tr>
@@ -194,16 +213,16 @@ export function DirectoryView({
       {/* Import */}
       <Drawer
         open={sheet === "import"}
-        title="Import directory"
+        title={t("Import directory", "استيراد الدليل")}
         onClose={() => setSheet(null)}
         footer={
           <>
-            <Button aria-label="Cancel import" onClick={() => setSheet(null)}>
-              Cancel
+            <Button aria-label={t("Cancel import", "إلغاء الاستيراد")} onClick={() => setSheet(null)}>
+              {t("Cancel", "إلغاء")}
             </Button>
             <Button
               variant="primary"
-              aria-label="Run import"
+              aria-label={t("Run import", "تشغيل الاستيراد")}
               disabled={busy || !csv.trim()}
               onClick={async () => {
                 if (await run(() => importDirectoryAction(csv))) {
@@ -212,23 +231,24 @@ export function DirectoryView({
                 }
               }}
             >
-              {busy ? "Importing…" : "Import"}
+              {busy ? t("Importing…", "جارٍ الاستيراد…") : t("Import", "استيراد")}
             </Button>
           </>
         }
       >
         <p className="text-[14px] text-muted">
-          One row per employee. Managers are created or updated from the manager columns. Existing
-          codes are updated, new codes are added; nothing is deleted. Status is Active or Inactive
-          and defaults to Active.
+          {t(
+            "One row per employee. Managers are created or updated from the manager columns. Existing codes are updated, new codes are added; nothing is deleted. Status is Active or Inactive and defaults to Active.",
+            "صف واحد لكل موظف. يُنشأ المديرون أو يُحدَّثون من أعمدة المدير. تُحدَّث الرموز الموجودة وتُضاف الرموز الجديدة، ولا يُحذف شيء. الحالة هي Active أو Inactive، والقيمة الافتراضية Active.",
+          )}
         </p>
         <pre className="overflow-x-auto rounded-[8px] bg-surface-2 p-3 text-[12px] leading-5">{CSV_EXAMPLE}</pre>
         <label className="flex flex-col gap-2">
-          <span className="text-[14px] font-medium">CSV file</span>
+          <span className="text-[14px] font-medium">{t("CSV file", "ملف CSV")}</span>
           <input
             type="file"
             accept=".csv,text/csv,text/plain"
-            aria-label="Choose CSV file"
+            aria-label={t("Choose CSV file", "اختيار ملف CSV")}
             className="text-[14px]"
             onChange={async (e) => {
               const file = e.target.files?.[0];
@@ -237,9 +257,10 @@ export function DirectoryView({
           />
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-[14px] font-medium">Or paste the rows</span>
+          <span className="text-[14px] font-medium">{t("Or paste the rows", "أو الصق الصفوف")}</span>
           <textarea
-            aria-label="CSV rows"
+            dir="ltr"
+            aria-label={t("CSV rows", "صفوف CSV")}
             rows={12}
             value={csv}
             onChange={(e) => setCsv(e.target.value)}
@@ -252,16 +273,16 @@ export function DirectoryView({
       {/* Manager */}
       <Drawer
         open={sheet === "manager"}
-        title="Add manager"
+        title={t("Add manager", "إضافة مدير")}
         onClose={() => setSheet(null)}
         footer={
           <>
-            <Button aria-label="Cancel manager" onClick={() => setSheet(null)}>
-              Cancel
+            <Button aria-label={t("Cancel manager", "إلغاء المدير")} onClick={() => setSheet(null)}>
+              {t("Cancel", "إلغاء")}
             </Button>
             <Button
               variant="primary"
-              aria-label="Save manager"
+              aria-label={t("Save manager", "حفظ المدير")}
               disabled={busy}
               onClick={async () => {
                 if (await run(() => saveManagerAction(mgr))) {
@@ -270,29 +291,34 @@ export function DirectoryView({
                 }
               }}
             >
-              Save manager
+              {t("Save manager", "حفظ المدير")}
             </Button>
           </>
         }
       >
         <p className="text-[14px] text-muted">
-          A manager owns a team in the directory. To let them sign in, create a Manager account in
-          Admin and link it to this code.
+          {t(
+            "A manager owns a team in the directory. To let them sign in, create a Manager account in Admin and link it to this code.",
+            "المدير مسؤول عن فريق في الدليل. ولتمكينه من تسجيل الدخول، أنشئ حساب مدير من الإدارة واربطه بهذا الرمز.",
+          )}
         </p>
         <div className="grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)]">
-          <Labelled label="Code">
-            <input className={input} value={mgr.code} onChange={(e) => setMgr({ ...mgr, code: e.target.value })} placeholder="M06" />
+          <Labelled label={t("Code", "الرمز")}>
+            <input dir="ltr" className={input} value={mgr.code} onChange={(e) => setMgr({ ...mgr, code: e.target.value })} placeholder="M06" />
           </Labelled>
-          <Labelled label="Name">
+          <Labelled label={t("Name", "الاسم")}>
             <input className={input} value={mgr.name} onChange={(e) => setMgr({ ...mgr, name: e.target.value })} />
           </Labelled>
         </div>
-        <Labelled label="Title">
+        <Labelled label={t("Title", "المسمى الوظيفي")}>
           <input className={input} value={mgr.title} onChange={(e) => setMgr({ ...mgr, title: e.target.value })} />
         </Labelled>
         {managers.length ? (
           <p className="text-[12px] text-muted">
-            Existing codes: {managers.map((m) => m.code).join(", ")}. Saving an existing code updates it.
+            {t(
+              `Existing codes: ${managers.map((m) => m.code).join(", ")}. Saving an existing code updates it.`,
+              `الرموز الحالية: ${managers.map((m) => m.code).join("، ")}. حفظ رمز موجود يحدّثه.`,
+            )}
           </p>
         ) : null}
       </Drawer>
@@ -300,58 +326,58 @@ export function DirectoryView({
       {/* Employee */}
       <Drawer
         open={sheet === "employee"}
-        title="Add employee"
+        title={t("Add employee", "إضافة موظف")}
         onClose={() => setSheet(null)}
         footer={
           <>
-            <Button aria-label="Cancel employee" onClick={() => setSheet(null)}>
-              Cancel
+            <Button aria-label={t("Cancel employee", "إلغاء الموظف")} onClick={() => setSheet(null)}>
+              {t("Cancel", "إلغاء")}
             </Button>
             <Button
               variant="primary"
-              aria-label="Save employee"
+              aria-label={t("Save employee", "حفظ الموظف")}
               disabled={busy || !managers.length}
               onClick={async () => {
                 if (await run(() => saveEmployeeAction(emp))) setSheet(null);
               }}
             >
-              Save employee
+              {t("Save employee", "حفظ الموظف")}
             </Button>
           </>
         }
       >
         {!managers.length ? (
           <p className="rounded-[6px] bg-warn-soft px-3 py-2 text-[13px] text-warn">
-            Add a manager first: every employee reports to one.
+            {t("Add a manager first: every employee reports to one.", "أضف مديراً أولاً: كل موظف يتبع مديراً.")}
           </p>
         ) : null}
         <datalist id="dir-departments">{known.departments.map((v) => <option key={v} value={v} />)}</datalist>
         <datalist id="dir-units">{known.units.map((v) => <option key={v} value={v} />)}</datalist>
         <datalist id="dir-teams">{known.teams.map((v) => <option key={v} value={v} />)}</datalist>
         <div className="grid gap-4 sm:grid-cols-[140px_minmax(0,1fr)]">
-          <Labelled label="Code">
-            <input className={input} value={emp.code} onChange={(e) => setEmp({ ...emp, code: e.target.value })} placeholder="E1045" />
+          <Labelled label={t("Code", "الرمز")}>
+            <input dir="ltr" className={input} value={emp.code} onChange={(e) => setEmp({ ...emp, code: e.target.value })} placeholder="E1045" />
           </Labelled>
-          <Labelled label="Full name">
+          <Labelled label={t("Full name", "الاسم الكامل")}>
             <input className={input} value={emp.name} onChange={(e) => setEmp({ ...emp, name: e.target.value })} />
           </Labelled>
         </div>
-        <Labelled label="Job title">
+        <Labelled label={t("Job title", "المسمى الوظيفي")}>
           <input className={input} value={emp.title} onChange={(e) => setEmp({ ...emp, title: e.target.value })} />
         </Labelled>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Labelled label="Department">
+          <Labelled label={t("Department", "القسم")}>
             <input list="dir-departments" className={input} value={emp.department} onChange={(e) => setEmp({ ...emp, department: e.target.value })} />
           </Labelled>
-          <Labelled label="Unit">
+          <Labelled label={t("Unit", "الوحدة")}>
             <input list="dir-units" className={input} value={emp.unit} onChange={(e) => setEmp({ ...emp, unit: e.target.value })} />
           </Labelled>
-          <Labelled label="Team">
+          <Labelled label={t("Team", "الفريق")}>
             <input list="dir-teams" className={input} value={emp.team} onChange={(e) => setEmp({ ...emp, team: e.target.value })} />
           </Labelled>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Labelled label="Manager">
+          <Labelled label={t("Manager", "المدير")}>
             <select className={input} value={emp.managerCode} onChange={(e) => setEmp({ ...emp, managerCode: e.target.value })}>
               {managers.map((m) => (
                 <option key={m.code} value={m.code}>
@@ -360,14 +386,14 @@ export function DirectoryView({
               ))}
             </select>
           </Labelled>
-          <Labelled label="Status">
+          <Labelled label={t("Status", "الحالة")}>
             <select
               className={input}
               value={emp.status}
               onChange={(e) => setEmp({ ...emp, status: e.target.value as "Active" | "Inactive" })}
             >
-              <option>Active</option>
-              <option>Inactive</option>
+              <option value="Active">{statusLabel("Active")}</option>
+              <option value="Inactive">{statusLabel("Inactive")}</option>
             </select>
           </Labelled>
         </div>

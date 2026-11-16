@@ -1,4 +1,5 @@
 import { ArrowDownRight, ArrowRight, ArrowUpRight, Minus } from "lucide-react";
+import { useT } from "@/components/i18n/lang";
 import { cn } from "@/lib/format";
 
 export function PulseStats({
@@ -10,14 +11,15 @@ export function PulseStats({
   average: string;
   trend: "up" | "down" | "flat" | null;
 }) {
+  const t = useT();
   const trendLabel =
     trend === "up"
-      ? "Improving"
+      ? t("Improving", "في تحسّن")
       : trend === "down"
-        ? "Declining"
+        ? t("Declining", "في تراجع")
         : trend === "flat"
-          ? "Stable"
-          : "No trend";
+          ? t("Stable", "مستقر")
+          : t("No trend", "لا يوجد اتجاه");
 
   const TrendIcon =
     trend === "up"
@@ -32,16 +34,16 @@ export function PulseStats({
     <>
       <span
         className="inline-flex items-center gap-1.5 rounded-[5px] bg-surface-2 px-2 py-0.5 text-[11px] font-semibold tracking-[-0.01em] text-ink"
-        title="Current pulse"
+        title={t("Current pulse", "النبض الحالي")}
       >
-        <span className="font-medium text-muted">Pulse</span>
+        <span className="font-medium text-muted">{t("Pulse", "النبض")}</span>
         <span className="mono">{current}</span>
       </span>
       <span
         className="inline-flex items-center gap-1.5 rounded-[5px] bg-surface-2 px-2 py-0.5 text-[11px] font-semibold tracking-[-0.01em] text-ink"
-        title="Historical average"
+        title={t("Historical average", "المتوسط التاريخي")}
       >
-        <span className="font-medium text-muted">Avg</span>
+        <span className="font-medium text-muted">{t("Avg", "المتوسط")}</span>
         <span className="mono">{average}</span>
       </span>
       <span
@@ -52,10 +54,10 @@ export function PulseStats({
           trend === "flat" && "bg-info-soft text-info",
           !trend && "bg-surface-2 text-muted",
         )}
-        title="Pulse trend"
+        title={t("Pulse trend", "اتجاه النبض")}
       >
         <TrendIcon className="size-3.5" strokeWidth={2} aria-hidden />
-        <span className={cn(trend ? "opacity-80" : undefined)}>Trend</span>
+        <span className={cn(trend ? "opacity-80" : undefined)}>{t("Trend", "الاتجاه")}</span>
         <span>{trendLabel}</span>
       </span>
     </>

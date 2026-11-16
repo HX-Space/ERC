@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useLang, useT } from "@/components/i18n/lang";
 
 export function Drawer({
   open,
@@ -9,20 +10,28 @@ export function Drawer({
   onClose,
   children,
   footer,
+  width = 720,
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Max width in px (full width on small screens). */
+  width?: number;
 }) {
+  const t = useT();
+  const lang = useLang();
+  // In Arabic (RTL) the panel sits on the left, so it slides in from the left.
+  const offscreen = lang === "ar" ? "-100%" : "100%";
+
   return (
     <AnimatePresence>
       {open ? (
         <>
           <motion.button
             type="button"
-            aria-label="Close panel backdrop"
+            aria-label={t("Close panel backdrop", "إغلاق خلفية اللوحة")}
             className="fixed inset-0 z-40 cursor-pointer bg-black/35"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -33,10 +42,11 @@ export function Drawer({
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[720px] flex-col border-l border-line bg-surface shadow-[var(--shadow-float)]"
-            initial={{ x: "100%" }}
+            className="fixed inset-y-0 end-0 z-50 flex w-full flex-col border-s border-line bg-surface shadow-[var(--shadow-float)]"
+            style={{ maxWidth: width }}
+            initial={{ x: offscreen }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            exit={{ x: offscreen }}
             transition={{ type: "spring", stiffness: 340, damping: 36 }}
           >
             <div className="flex items-center justify-between gap-3 border-b border-line bg-surface px-6 py-3.5">
@@ -46,10 +56,10 @@ export function Drawer({
               <Button
                 size="sm"
                 variant="ghost"
-                aria-label="Close panel"
+                aria-label={t("Close panel", "إغلاق اللوحة")}
                 onClick={onClose}
               >
-                Close
+                {t("Close", "إغلاق")}
               </Button>
             </div>
             <div className="flex-1 space-y-4 overflow-y-auto p-6">{children}</div>

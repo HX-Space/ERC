@@ -2,26 +2,44 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { analyticsInsightsAction } from "@/app/actions/ai";
+import { useLang, useT } from "@/components/i18n/lang";
 import { Kpi } from "@/components/ui/kpi";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import type { AnalyticsInsights } from "@/lib/ai-server";
 import { isOverdue } from "@/lib/followups";
 import { addDaysIso, formatDate, todayIso } from "@/lib/format";
+import type { T } from "@/lib/i18n";
 import type { EmployeeRecord, FollowupRecord, MeetingRecord } from "@/types";
+
+function meetingsWord(n: number, t: T) {
+  return t(
+    n === 1 ? "meeting" : "meetings",
+    n === 1 ? "اجتماع" : n === 2 ? "اجتماعان" : n <= 10 ? "اجتماعات" : "اجتماعًا",
+  );
+}
+
+function typeLabel(v: string, t: T) {
+  return v === "Individual" ? t("Individual", "فردي") : v === "Group" ? t("Group", "جماعي") : v;
+}
 
 export function AnalyticsView({
   meetings,
   followups,
   employees,
   departments,
+  initialDepartment = "",
 }: {
   meetings: MeetingRecord[];
   followups: FollowupRecord[];
   employees: EmployeeRecord[];
   departments: string[];
+  initialDepartment?: string;
 }) {
-  const [dept, setDept] = useState("");
+  const t = useT();
+  const uiLang = useLang();
+  const fmtDate = (iso: string | null | undefined) => formatDate(iso, uiLang);
+  const [dept, setDept] = useState(initialDepartment);
   const [from, setFrom] = useState(() => addDaysIso(todayIso(), -365));
   const [to, setTo] = useState(todayIso());
   const [type, setType] = useState("");
@@ -112,30 +130,37 @@ export function AnalyticsView({
     <>
       <header className="page-head">
         <div>
-          <h1>Analytics</h1>
-          <p>Activity, concerns, and development signals across the organisation.</p>
+          <h1>{t("Analytics", "التحليلات")}</h1>
+          <p>
+            {t(
+              "Activity, concerns, and development signals across the organisation.",
+              "مؤشرات النشاط والمخاوف وتطوير الموظفين على مستوى المؤسسة.",
+            )}
+          </p>
         </div>
-        <Pill tone="mute">Data through {formatDate(todayIso())}</Pill>
+        <Pill tone="mute">
+          {t("Data through", "البيانات حتى")} {fmtDate(todayIso())}
+        </Pill>
       </header>
 
       <Panel>
         <PanelBody>
           <div className="grid gap-3 md:grid-cols-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-muted">Department</span>
+              <span className="text-xs font-semibold text-muted">{t("Department", "القسم")}</span>
               <select
                 value={dept}
                 onChange={(e) => setDept(e.target.value)}
                 className="rounded-lg border border-line-2 px-3 py-2 outline-none"
               >
-                <option value="">All</option>
+                <option value="">{t("All", "الكل")}</option>
                 {departments.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-muted">From</span>
+              <span className="text-xs font-semibold text-muted">{t("From", "من")}</span>
               <input
                 type="date"
                 value={from}
@@ -144,7 +169,7 @@ export function AnalyticsView({
               />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-muted">To</span>
+              <span className="text-xs font-semibold text-muted">{t("To", "إلى")}</span>
               <input
                 type="date"
                 value={to}
@@ -153,15 +178,15 @@ export function AnalyticsView({
               />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-muted">Meeting type</span>
+              <span className="text-xs font-semibold text-muted">{t("Meeting type", "نوع الاجتماع")}</span>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 className="rounded-lg border border-line-2 px-3 py-2 outline-none"
               >
-                <option value="">All</option>
-                <option>Individual</option>
-                <option>Group</option>
+                <option value="">{t("All", "الكل")}</option>
+                <option value="Individual">{t("Individual", "فردي")}</option>
+                <option value="Group">{t("Group", "جماعي")}</option>
               </select>
             </label>
           </div>
@@ -169,17 +194,17 @@ export function AnalyticsView({
       </Panel>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-        <Kpi label="Total meetings" value={filtered.length} />
-        <Kpi label="Employees met" value={met.size} />
-        <Kpi label="Identified risks" value={risks} tone="warn" />
-        <Kpi label="Open follow-ups" value={open} />
-        <Kpi label="Closed follow-ups" value={closed} />
-        <Kpi label="Overdue follow-ups" value={od} tone="risk" />
+        <Kpi label={t("Total meetings", "إجمالي الاجتماعات")} value={filtered.length} />
+        <Kpi label={t("Employees met", "الموظفون الذين تمت مقابلتهم")} value={met.size} />
+        <Kpi label={t("Identified risks", "المخاطر المحددة")} value={risks} tone="warn" />
+        <Kpi label={t("Open follow-ups", "المتابعات المفتوحة")} value={open} />
+        <Kpi label={t("Closed follow-ups", "المتابعات المغلقة")} value={closed} />
+        <Kpi label={t("Overdue follow-ups", "المتابعات المتأخرة")} value={od} tone="risk" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel>
-          <PanelHeader title="Meetings by department" />
+          <PanelHeader title={t("Meetings by department", "الاجتماعات حسب القسم")} />
           <PanelBody className="space-y-3">
             {Object.keys(byDept).length ? (
               Object.keys(byDept)
@@ -202,18 +227,18 @@ export function AnalyticsView({
                           style={{ width: `${(v.g / maxDept) * 100}%` }}
                         />
                       </div>
-                      <span className="mono text-right">{v.i + v.g}</span>
+                      <span className="mono text-end">{v.i + v.g}</span>
                     </div>
                   );
                 })
             ) : (
-              <p className="text-muted">No meetings match these filters.</p>
+              <p className="text-muted">{t("No meetings match these filters.", "لا توجد اجتماعات تطابق هذه الفلاتر.")}</p>
             )}
           </PanelBody>
         </Panel>
 
         <Panel>
-          <PanelHeader title="Follow-up status" />
+          <PanelHeader title={t("Follow-up status", "حالة المتابعات")} />
           <PanelBody>
             <div className="flex h-3.5 overflow-hidden rounded-full bg-surface-2">
               <i
@@ -232,9 +257,9 @@ export function AnalyticsView({
               />
             </div>
             <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted">
-              <span>Closed {closed}</span>
-              <span>Open on time {open - od}</span>
-              <span>Overdue {od}</span>
+              <span>{t("Closed", "مغلقة")} {closed}</span>
+              <span>{t("Open on time", "مفتوحة في الموعد")} {open - od}</span>
+              <span>{t("Overdue", "متأخرة")} {od}</span>
             </div>
           </PanelBody>
         </Panel>
@@ -244,15 +269,24 @@ export function AnalyticsView({
         <PanelHeader
           title={
             <span className="flex items-center gap-2">
-              AI management insights
+              {t("AI management insights", "رؤى الإدارة بالذكاء الاصطناعي")}
               {insightsReady ? (
-                <Pill tone="ai">{insightsReady.source === "openai" ? insightsReady.model : "Local engine"}</Pill>
+                <Pill tone="ai">
+                  {insightsReady.source === "openai" ? insightsReady.model : t("Local engine", "المحرك المحلي")}
+                </Pill>
               ) : null}
             </span>
           }
         >
           <span className="text-[12px] text-muted">
-            {insightsReady ? `${filtered.length} meetings in this selection` : insightError ? "" : "Analysing…"}
+            {insightsReady
+              ? t(
+                  `${filtered.length} meetings in this selection`,
+                  `${filtered.length} اجتماعات في هذا التحديد`,
+                )
+              : insightError
+                ? ""
+                : t("Analysing…", "جارٍ التحليل…")}
           </span>
         </PanelHeader>
         <PanelBody>
@@ -274,24 +308,24 @@ export function AnalyticsView({
               ) : null}
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <Insight
-                  title="Top recurring issues"
-                  items={insightsReady.data.issues.map((t) => (
-                    <li key={t.label}>
-                      <b>{t.label}</b> · {t.meetingIds.length} meeting{t.meetingIds.length === 1 ? "" : "s"}
-                      <div className="text-faint text-xs">{t.teams.join(", ")}</div>
+                  title={t("Top recurring issues", "أبرز المشكلات المتكررة")}
+                  items={insightsReady.data.issues.map((iss) => (
+                    <li key={iss.label}>
+                      <b>{iss.label}</b> · {iss.meetingIds.length} {meetingsWord(iss.meetingIds.length, t)}
+                      <div className="text-faint text-xs">{iss.teams.join(", ")}</div>
                     </li>
                   ))}
                 />
                 <Insight
-                  title="Positive trends"
-                  items={insightsReady.data.positives.map((t) => (
-                    <li key={t.label}>
-                      <b>{t.label}</b> · {t.meetingIds.length} meeting{t.meetingIds.length === 1 ? "" : "s"}
+                  title={t("Positive trends", "الاتجاهات الإيجابية")}
+                  items={insightsReady.data.positives.map((pos) => (
+                    <li key={pos.label}>
+                      <b>{pos.label}</b> · {pos.meetingIds.length} {meetingsWord(pos.meetingIds.length, t)}
                     </li>
                   ))}
                 />
                 <Insight
-                  title="Recommended actions"
+                  title={t("Recommended actions", "الإجراءات الموصى بها")}
                   items={insightsReady.data.actions.map((a) => (
                     <li key={a}>{a}</li>
                   ))}
@@ -303,16 +337,16 @@ export function AnalyticsView({
       </Panel>
 
       <Panel>
-        <PanelHeader title="Meeting history" />
+        <PanelHeader title={t("Meeting history", "سجل الاجتماعات")} />
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-start">
             <thead>
               <tr className="border-b border-line text-[12px] text-muted">
-                <th className="px-3 py-2">ID</th>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Employee(s)</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Risks</th>
+                <th className="px-3 py-2">{t("ID", "المعرّف")}</th>
+                <th className="px-3 py-2">{t("Date", "التاريخ")}</th>
+                <th className="px-3 py-2">{t("Employee(s)", "الموظف/الموظفون")}</th>
+                <th className="px-3 py-2">{t("Type", "النوع")}</th>
+                <th className="px-3 py-2">{t("Risks", "المخاطر")}</th>
               </tr>
             </thead>
             <tbody>
@@ -322,13 +356,13 @@ export function AnalyticsView({
                 .map((m) => (
                   <tr key={m.id} className="border-b border-line last:border-0">
                     <td className="mono px-3 py-2">{m.id}</td>
-                    <td className="mono px-3 py-2">{formatDate(m.meetingDate)}</td>
+                    <td className="mono px-3 py-2">{fmtDate(m.meetingDate)}</td>
                     <td className="px-3 py-2">
                       {(m.employeeNames ?? []).join(", ")}
                     </td>
-                    <td className="px-3 py-2">{m.meetingType}</td>
+                    <td className="px-3 py-2">{typeLabel(m.meetingType, t)}</td>
                     <td className="px-3 py-2">
-                      {m.risk ? <Pill tone="warn">Noted</Pill> : "–"}
+                      {m.risk ? <Pill tone="warn">{t("Noted", "تم التسجيل")}</Pill> : "–"}
                     </td>
                   </tr>
                 ))}
@@ -347,13 +381,14 @@ function Insight({
   title: string;
   items: React.ReactNode[];
 }) {
+  const t = useT();
   return (
     <div>
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       {items.length ? (
         <ul className="space-y-2 text-sm">{items}</ul>
       ) : (
-        <p className="text-faint text-sm">Nothing in this selection.</p>
+        <p className="text-faint text-sm">{t("Nothing in this selection.", "لا شيء في هذا التحديد.")}</p>
       )}
     </div>
   );

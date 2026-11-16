@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { getT } from "@/lib/i18n-server";
 import { canManageUsers } from "@/lib/rbac";
 import { listManagers } from "@/repositories/employees";
 import {
@@ -32,9 +33,17 @@ async function adminSession() {
 
 async function checkManagerLink(role: UserRole, managerCode: string | null | undefined) {
   if (role !== "MANAGER") return null;
-  if (!managerCode) return "Choose which manager in the directory this account belongs to.";
+  const t = await getT();
+  if (!managerCode) {
+    return t(
+      "Choose which manager in the directory this account belongs to.",
+      "اختر المدير في الدليل الذي ينتمي إليه هذا الحساب.",
+    );
+  }
   const managers = await listManagers();
-  if (!managers.some((m) => m.code === managerCode)) return "That manager code is not in the directory.";
+  if (!managers.some((m) => m.code === managerCode)) {
+    return t("That manager code is not in the directory.", "رمز المدير غير موجود في الدليل.");
+  }
   return null;
 }
 
@@ -45,7 +54,10 @@ export async function createUserAction(input: {
   role: UserRole;
   managerCode?: string | null;
 }): Promise<Result> {
-  if (!(await adminSession())) return { ok: false, error: "Admin access required." };
+  const t = await getT();
+  if (!(await adminSession())) {
+    return { ok: false, error: t("Admin access required.", "تتطلب صلاحية المسؤول.") };
+  }
 
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
@@ -60,9 +72,12 @@ export async function createUserAction(input: {
   } catch (error) {
     const msg = error instanceof Error ? error.message : "";
     if (/users_email_key|duplicate key/i.test(msg)) {
-      return { ok: false, error: "An account with this email already exists." };
+      return {
+        ok: false,
+        error: t("An account with this email already exists.", "يوجد حساب بهذا البريد الإلكتروني بالفعل."),
+      };
     }
-    return { ok: false, error: "Could not create the user." };
+    return { ok: false, error: t("Could not create the user.", "تعذر إنشاء المستخدم.") };
   }
   revalidatePath("/admin");
   return { ok: true };
@@ -73,12 +88,13 @@ export async function updateUserRoleAction(input: {
   role: UserRole;
   managerCode: string | null;
 }): Promise<Result> {
+  const t = await getT();
   const me = await adminSession();
-  if (!me) return { ok: false, error: "Admin access required." };
+  if (!me) return { ok: false, error: t("Admin access required.", "تتطلب صلاحية المسؤول.") };
   if (input.id === me.id && input.role !== "ADMIN") {
-    return { ok: false, error: "You cannot remove your own admin role." };
+    return { ok: false, error: t("You cannot remove your own admin role.", "لا يمكنك إزالة دور المسؤول الخاص بك.") };
   }
-  if (!ROLES.includes(input.role)) return { ok: false, error: "Unknown role." };
+  if (!ROLES.includes(input.role)) return { ok: false, error: t("Unknown role.", "الدور غير معروف.") };
   const linkError = await checkManagerLink(input.role, input.managerCode);
   if (linkError) return { ok: false, error: linkError };
 
@@ -88,10 +104,11 @@ export async function updateUserRoleAction(input: {
 }
 
 export async function setUserActiveAction(id: string, isActive: boolean): Promise<Result> {
+  const t = await getT();
   const me = await adminSession();
-  if (!me) return { ok: false, error: "Admin access required." };
+  if (!me) return { ok: false, error: t("Admin access required.", "تتطلب صلاحية المسؤول.") };
   if (id === me.id && !isActive) {
-    return { ok: false, error: "You cannot disable your own account." };
+    return { ok: false, error: t("You cannot disable your own account.", "لا يمكنك تعطيل حسابك الخاص.") };
   }
   await setUserActive(id, isActive);
   revalidatePath("/admin");

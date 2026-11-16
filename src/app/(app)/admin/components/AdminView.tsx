@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { useToast } from "@/components/ui/toast";
-import { ROLE_LABELS } from "@/lib/constants";
+import { useLang, useT } from "@/components/i18n/lang";
+import { ROLE_LABELS, ROLE_LABELS_AR } from "@/lib/constants";
 import type { ManagerRecord, UserRecord, UserRole } from "@/types";
 
 const ROLES: UserRole[] = ["ADMIN", "ER", "HR", "MANAGER"];
@@ -25,6 +26,9 @@ export function AdminView({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useT();
+  const lang = useLang();
+  const roleLabel = (r: UserRole) => (lang === "ar" ? ROLE_LABELS_AR[r] : ROLE_LABELS[r]);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +47,7 @@ export function AdminView({
       toast(result.error);
       return;
     }
-    toast("User created.");
+    toast(t("User created.", "تم إنشاء المستخدم."));
     setEmail("");
     setName("");
     setPassword("");
@@ -54,31 +58,32 @@ export function AdminView({
     <>
       <header className="page-head">
         <div>
-          <h1>Admin</h1>
-          <p>Users, roles, and access across the workspace.</p>
+          <h1>{t("Admin", "الإدارة")}</h1>
+          <p>{t("Users, roles, and access across the workspace.", "المستخدمون والأدوار والصلاحيات في مساحة العمل.")}</p>
         </div>
       </header>
 
       <Panel>
-        <PanelHeader title="Create user" />
+        <PanelHeader title={t("Create user", "إنشاء مستخدم")} />
         <PanelBody>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            <Field label="Name">
+            <Field label={t("Name", "الاسم")}>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full rounded-lg border border-line-2 px-3 py-2 outline-none"
               />
             </Field>
-            <Field label="Email">
+            <Field label={t("Email", "البريد الإلكتروني")}>
               <input
                 type="email"
+                dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-line-2 px-3 py-2 outline-none"
               />
             </Field>
-            <Field label="Temporary password">
+            <Field label={t("Temporary password", "كلمة المرور المؤقتة")}>
               <input
                 type="text"
                 value={password}
@@ -86,7 +91,7 @@ export function AdminView({
                 className="w-full rounded-lg border border-line-2 px-3 py-2 outline-none"
               />
             </Field>
-            <Field label="Role">
+            <Field label={t("Role", "الدور")}>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
@@ -94,20 +99,22 @@ export function AdminView({
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
-                    {ROLE_LABELS[r]}
+                    {roleLabel(r)}
                   </option>
                 ))}
               </select>
             </Field>
             {role === "MANAGER" ? (
-              <Field label="Linked manager">
+              <Field label={t("Linked manager", "المدير المرتبط")}>
                 <select
                   value={managerCode}
                   onChange={(e) => setManagerCode(e.target.value)}
                   className="w-full rounded-lg border border-line-2 px-3 py-2 outline-none"
                 >
                   <option value="">
-                    {managers.length ? "Select manager" : "Add managers in Directory first"}
+                    {managers.length
+                      ? t("Select manager", "اختر المدير")
+                      : t("Add managers in Directory first", "أضف المديرين في الدليل أولاً")}
                   </option>
                   {managers.map((m) => (
                     <option key={m.code} value={m.code}>
@@ -121,27 +128,27 @@ export function AdminView({
           <div className="mt-4">
             <Button
               variant="primary"
-              aria-label="Create user"
+              aria-label={t("Create user", "إنشاء مستخدم")}
               onClick={createUser}
             >
-              Create user
+              {t("Create user", "إنشاء مستخدم")}
             </Button>
           </div>
         </PanelBody>
       </Panel>
 
       <Panel>
-        <PanelHeader title="Users" />
+        <PanelHeader title={t("Users", "المستخدمون")} />
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-start">
             <thead>
               <tr className="border-b border-line text-[12px] text-muted">
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2">Role</th>
-                <th className="px-3 py-2">Manager</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Actions</th>
+                <th className="px-3 py-2">{t("Name", "الاسم")}</th>
+                <th className="px-3 py-2">{t("Email", "البريد الإلكتروني")}</th>
+                <th className="px-3 py-2">{t("Role", "الدور")}</th>
+                <th className="px-3 py-2">{t("Manager", "المدير")}</th>
+                <th className="px-3 py-2">{t("Status", "الحالة")}</th>
+                <th className="px-3 py-2">{t("Actions", "الإجراءات")}</th>
               </tr>
             </thead>
             <tbody>
@@ -151,7 +158,7 @@ export function AdminView({
                   <td className="px-3 py-3">{u.email}</td>
                   <td className="px-3 py-3">
                     <select
-                      aria-label={`Role for ${u.name}`}
+                      aria-label={t(`Role for ${u.name}`, `الدور لـ ${u.name}`)}
                       className="rounded-lg border border-line-2 px-2 py-1 outline-none"
                       value={u.role}
                       onChange={async (e) => {
@@ -160,13 +167,13 @@ export function AdminView({
                           role: e.target.value as UserRole,
                           managerCode: u.managerCode,
                         });
-                        toast(result.ok ? "Role updated." : result.error);
+                        toast(result.ok ? t("Role updated.", "تم تحديث الدور.") : result.error);
                         router.refresh();
                       }}
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
-                          {ROLE_LABELS[r]}
+                          {roleLabel(r)}
                         </option>
                       ))}
                     </select>
@@ -174,7 +181,7 @@ export function AdminView({
                   <td className="mono px-3 py-3">{u.managerCode ?? "—"}</td>
                   <td className="px-3 py-3">
                     <Pill tone={u.isActive ? "ok" : "mute"}>
-                      {u.isActive ? "Active" : "Disabled"}
+                      {u.isActive ? t("Active", "نشط") : t("Disabled", "معطّل")}
                     </Pill>
                   </td>
                   <td className="px-3 py-3">
@@ -183,8 +190,8 @@ export function AdminView({
                       variant={u.isActive ? "danger" : "primary"}
                       aria-label={
                         u.isActive
-                          ? `Disable ${u.name}`
-                          : `Enable ${u.name}`
+                          ? t(`Disable ${u.name}`, `تعطيل ${u.name}`)
+                          : t(`Enable ${u.name}`, `تفعيل ${u.name}`)
                       }
                       onClick={async () => {
                         const result = await setUserActiveAction(u.id, !u.isActive);
@@ -192,13 +199,13 @@ export function AdminView({
                           !result.ok
                             ? result.error
                             : u.isActive
-                              ? "User disabled."
-                              : "User enabled.",
+                              ? t("User disabled.", "تم تعطيل المستخدم.")
+                              : t("User enabled.", "تم تفعيل المستخدم."),
                         );
                         router.refresh();
                       }}
                     >
-                      {u.isActive ? "Disable" : "Enable"}
+                      {u.isActive ? t("Disable", "تعطيل") : t("Enable", "تفعيل")}
                     </Button>
                   </td>
                 </tr>

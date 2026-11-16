@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
+import { useLang, useT } from "@/components/i18n/lang";
 import { formatDate } from "@/lib/format";
 import { isOverdue } from "@/lib/followups";
 import type { FollowupRecord } from "@/types";
@@ -21,6 +22,9 @@ export function CloseFollowupDialog({
   onClose: () => void;
   onConfirm: (note: string) => void;
 }) {
+  const t = useT();
+  const uiLang = useLang();
+  const fmtDate = (iso: string | null | undefined) => formatDate(iso, uiLang);
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export function CloseFollowupDialog({
         <>
           <motion.button
             type="button"
-            aria-label="Dismiss close dialog"
+            aria-label={t("Dismiss close dialog", "إغلاق نافذة الإغلاق")}
             className="fixed inset-0 z-40 cursor-pointer bg-[#1a2030]/45"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -65,14 +69,17 @@ export function CloseFollowupDialog({
                   id="close-followup-title"
                   className="font-[family-name:var(--font-display)] text-lg tracking-[-0.02em]"
                 >
-                  Mark follow-up closed
+                  {t("Mark follow-up closed", "تحديد المتابعة كمغلقة")}
                 </h2>
                 <p className="mt-1 text-sm text-muted">
-                  Records the action taken — not that the issue is resolved.
+                  {t(
+                    "Records the action taken — not that the issue is resolved.",
+                    "يسجّل الإجراء المتخذ — لا يعني أن المشكلة قد حُلّت.",
+                  )}
                 </p>
               </div>
               <Pill tone={isOverdue(followup) ? "risk" : "info"}>
-                {isOverdue(followup) ? "Overdue" : "Open"}
+                {isOverdue(followup) ? t("Overdue", "متأخرة") : t("Open", "مفتوحة")}
               </Pill>
             </div>
 
@@ -81,7 +88,7 @@ export function CloseFollowupDialog({
               <p className="mt-1 text-xs text-faint">
                 <span className="mono text-ai">{followup.meetingId}</span>
                 {" · "}
-                Due {formatDate(followup.targetDate)}
+                {t("Due", "الاستحقاق")} {fmtDate(followup.targetDate)}
                 {followup.employeeNames?.length
                   ? ` · ${followup.employeeNames.join(", ")}`
                   : ""}
@@ -90,14 +97,17 @@ export function CloseFollowupDialog({
 
             <label className="mt-4 flex flex-col gap-1.5">
               <span className="text-xs font-semibold text-muted">
-                Closing note{" "}
-                <span className="font-normal text-faint">(optional)</span>
+                {t("Closing note", "ملاحظة الإغلاق")}{" "}
+                <span className="font-normal text-faint">
+                  {t("(optional)", "(اختياري)")}
+                </span>
               </span>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
-                placeholder="What action was taken?"
+                dir="auto"
+                placeholder={t("What action was taken?", "ما الإجراء الذي اتُّخذ؟")}
                 className="rounded-lg border border-line-2 bg-surface px-3 py-2 text-sm outline-none transition focus:border-accent"
               />
             </label>
@@ -105,19 +115,22 @@ export function CloseFollowupDialog({
             <div className="mt-5 flex justify-end gap-2">
               <Button
                 variant="ghost"
-                aria-label="Cancel closing follow-up"
+                aria-label={t("Cancel closing follow-up", "إلغاء إغلاق المتابعة")}
                 onClick={onClose}
                 disabled={pending}
               >
-                Cancel
+                {t("Cancel", "إلغاء")}
               </Button>
               <Button
                 variant="primary"
-                aria-label={`Confirm close ${followup.id}`}
+                aria-label={t(
+                  `Confirm close ${followup.id}`,
+                  `تأكيد إغلاق ${followup.id}`,
+                )}
                 onClick={() => onConfirm(note)}
                 disabled={pending}
               >
-                {pending ? "Closing…" : "Mark closed"}
+                {pending ? t("Closing…", "جارٍ الإغلاق…") : t("Mark closed", "تحديد كمغلقة")}
               </Button>
             </div>
           </motion.div>

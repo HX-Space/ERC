@@ -1,4 +1,6 @@
 import { isoDate, query, withTransaction } from "@/lib/db";
+import { htmlToText } from "@/lib/rich-text";
+import { cleanRichText } from "@/lib/rich-text-server";
 import { todayIso } from "@/lib/format";
 import type {
   CreateMeetingInput,
@@ -37,11 +39,19 @@ function mapMeeting(row: MeetingRow): MeetingRecord {
     department: row.department,
     unit: row.unit,
     team: row.team,
-    positive: row.positive,
-    risk: row.risk,
-    negative: row.negative,
-    recommendation: row.recommendation,
-    followUpNote: row.follow_up_note,
+    // Plain text for analysis (AI, keyword scans); sanitised HTML for display.
+    positive: htmlToText(row.positive),
+    risk: htmlToText(row.risk),
+    negative: htmlToText(row.negative),
+    recommendation: htmlToText(row.recommendation),
+    followUpNote: htmlToText(row.follow_up_note),
+    outcomeHtml: {
+      positive: cleanRichText(row.positive),
+      risk: cleanRichText(row.risk),
+      negative: cleanRichText(row.negative),
+      recommendation: cleanRichText(row.recommendation),
+      followUpNote: cleanRichText(row.follow_up_note),
+    },
     pulse: row.pulse,
     pulseNote: row.pulse_note,
     aiSummary: row.ai_summary,

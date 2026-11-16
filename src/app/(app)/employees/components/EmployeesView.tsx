@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLang, useT } from "@/components/i18n/lang";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
+import { RichTextView } from "@/components/ui/rich-text";
 import { avgPulse, formatPulse, trendOf } from "@/lib/pulse";
 import { formatDate } from "@/lib/format";
 import { isOverdue } from "@/lib/followups";
@@ -35,6 +37,10 @@ export function EmployeesView({
   canClose: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
+  const uiLang = useLang();
+  const fmtDate = (iso: string | null | undefined) => formatDate(iso, uiLang);
+  const lang = useLang();
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("");
   const [title, setTitle] = useState("");
@@ -73,15 +79,20 @@ export function EmployeesView({
   }
 
   if (!selected) {
-    return <p className="text-muted">No employees in directory.</p>;
+    return <p className="text-muted">{t("No employees in directory.", "لا يوجد موظفون في الدليل.")}</p>;
   }
 
   return (
     <>
       <header className="page-head">
         <div>
-          <h1>History</h1>
-          <p>Find an employee and review meetings, pulse, and feedback on file.</p>
+          <h1>{t("History", "السجل")}</h1>
+          <p>
+            {t(
+              "Find an employee and review meetings, pulse, and feedback on file.",
+              "ابحث عن موظف وراجع الاجتماعات والنبض والملاحظات المسجلة لديه.",
+            )}
+          </p>
         </div>
       </header>
 
@@ -89,36 +100,36 @@ export function EmployeesView({
         <aside className="sticky top-4 max-h-[calc(100dvh-2rem)] overflow-hidden rounded-[var(--radius)] border border-line bg-surface">
           <div className="space-y-3 border-b border-line p-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-muted">Search</span>
+              <span className="text-xs font-semibold text-muted">{t("Search", "بحث")}</span>
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="e.g. Aya or E1008"
+                placeholder={t("e.g. Aya or E1008", "مثال: Aya أو E1008")}
                 className="rounded-lg border border-line-2 px-3 py-2 outline-none"
               />
             </label>
             <div className="grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">Department</span>
+                <span className="text-xs font-semibold text-muted">{t("Department", "القسم")}</span>
                 <select
                   value={dept}
                   onChange={(e) => setDept(e.target.value)}
                   className="rounded-lg border border-line-2 px-2 py-2 outline-none"
                 >
-                  <option value="">All</option>
+                  <option value="">{t("All", "الكل")}</option>
                   {departments.map((d) => (
                     <option key={d}>{d}</option>
                   ))}
                 </select>
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-muted">Job title</span>
+                <span className="text-xs font-semibold text-muted">{t("Job title", "المسمى الوظيفي")}</span>
                 <select
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="rounded-lg border border-line-2 px-2 py-2 outline-none"
                 >
-                  <option value="">All</option>
+                  <option value="">{t("All", "الكل")}</option>
                   {titles.map((t) => (
                     <option key={t}>{t}</option>
                   ))}
@@ -131,10 +142,16 @@ export function EmployeesView({
                 checked={hasOnly}
                 onChange={(e) => setHasOnly(e.target.checked)}
               />
-              Only employees with records (client filter hint)
+              {t(
+                "Only employees with records (client filter hint)",
+                "الموظفون الذين لديهم سجلات فقط (تلميح تصفية)",
+              )}
             </label>
             <div className="text-xs text-faint">
-              {filtered.length} of {employees.length} employees
+              {t(
+                `${filtered.length} of ${employees.length} employees`,
+                `${filtered.length} من ${employees.length} موظفًا`,
+              )}
             </div>
           </div>
           <ul className="max-h-[60vh] overflow-y-auto p-2">
@@ -142,9 +159,9 @@ export function EmployeesView({
               <li key={e.code}>
                 <button
                   type="button"
-                  aria-label={`Select ${e.name}`}
+                  aria-label={t(`Select ${e.name}`, `اختيار ${e.name}`)}
                   aria-current={e.code === selected.code ? "true" : undefined}
-                  className={`flex w-full cursor-pointer flex-col rounded-lg px-3 py-2 text-left outline-none hover:bg-surface-2 ${
+                  className={`flex w-full cursor-pointer flex-col rounded-lg px-3 py-2 text-start outline-none hover:bg-surface-2 ${
                     e.code === selected.code ? "bg-accent-soft text-accent" : ""
                   }`}
                   onClick={() => pick(e.code)}
@@ -152,7 +169,7 @@ export function EmployeesView({
                   <span className="font-medium">
                     {e.name}
                     {e.status !== "Active" ? (
-                      <span className="text-faint"> (inactive)</span>
+                      <span className="text-faint"> ({t("inactive", "غير نشط")})</span>
                     ) : null}
                   </span>
                   <span className="text-xs text-muted">
@@ -175,17 +192,21 @@ export function EmployeesView({
               <div className="mt-1 font-medium">{selected.title}</div>
               <div className="text-muted">
                 {selected.department} · {selected.unit} · {selected.team} ·
-                Manager: {selected.managerName}
+                {" "}{t("Manager:", "المدير:")} {selected.managerName}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Pill tone={selected.status === "Active" ? "ok" : "mute"}>
-                  {selected.status}
+                  {selected.status === "Active"
+                    ? t("Active", "نشط")
+                    : selected.status === "Inactive"
+                      ? t("Inactive", "غير نشط")
+                      : selected.status}
                 </Pill>
                 <span className="inline-flex items-center rounded-[5px] bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-muted">
-                  {meetings.length} ER meetings
+                  {meetings.length} {t("ER meetings", "اجتماعات علاقات الموظفين")}
                 </span>
                 <span className="inline-flex items-center rounded-[5px] bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-muted">
-                  {feedback.length} manager feedback
+                  {feedback.length} {t("manager feedback", "ملاحظات المدير")}
                 </span>
                 <PulseStats
                   current={formatPulse(avgs.at(-1))}
@@ -197,7 +218,7 @@ export function EmployeesView({
           </Panel>
 
           <Panel>
-            <PanelHeader title="History" />
+            <PanelHeader title={t("History", "السجل")} />
             <PanelBody>
               {timeline.length ? (
                 <div className="divide-y divide-line">
@@ -208,26 +229,29 @@ export function EmployeesView({
                         className="grid gap-3 py-4 md:grid-cols-[92px_minmax(0,1fr)]"
                       >
                         <div className="mono text-xs text-muted">
-                          {formatDate(item.m.meetingDate)}
+                          {fmtDate(item.m.meetingDate)}
                         </div>
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <b>ER meeting</b>
+                            <b>{t("ER meeting", "اجتماع علاقات الموظفين")}</b>
                             <span className="mono text-ai">{item.m.id}</span>
                             <span className="rounded bg-surface-2 px-2 text-xs">
-                              {item.m.meetingType}
+                              {item.m.meetingType === "Group"
+                                ? t("Group", "جماعي")
+                                : item.m.meetingType === "Individual"
+                                  ? t("Individual", "فردي")
+                                  : item.m.meetingType}
                             </span>
                           </div>
                           <dl className="mt-2 grid gap-1 sm:grid-cols-[7rem_minmax(0,1fr)] text-sm">
                             {OUTCOME_SECTIONS.map((sec) => {
-                              const val = item.m[sec.key];
-                              if (!val) return null;
+                              if (!item.m[sec.key]) return null;
                               return (
                                 <div key={sec.key} className="contents">
                                   <dt className="text-xs font-semibold text-muted">
-                                    {sec.label}
+                                    {lang === "ar" ? sec.labelAr : sec.label}
                                   </dt>
-                                  <dd className="m-0">{val}</dd>
+                                  <dd className="m-0"><RichTextView value={item.m.outcomeHtml[sec.key]} /></dd>
                                 </div>
                               );
                             })}
@@ -240,20 +264,24 @@ export function EmployeesView({
                         className="grid gap-3 py-4 md:grid-cols-[92px_minmax(0,1fr)]"
                       >
                         <div className="mono text-xs text-muted">
-                          {formatDate(item.f.feedbackDate)}
+                          {fmtDate(item.f.feedbackDate)}
                         </div>
                         <div>
                           <div className="flex flex-wrap gap-2">
-                            <b>Manager feedback</b>
+                            <b>{t("Manager feedback", "ملاحظات المدير")}</b>
                             <span className="rounded bg-surface-2 px-2 text-xs">
-                              {item.f.mode}
+                              {item.f.mode === "voice"
+                                ? t("voice", "صوتية")
+                                : item.f.mode === "written"
+                                  ? t("written", "مكتوبة")
+                                  : item.f.mode}
                             </span>
                             <span className="rounded bg-surface-2 px-2 text-xs">
                               {item.f.cycle}
                             </span>
                           </div>
                           <blockquote
-                            className="mt-2 border-l-2 border-line-2 pl-3 whitespace-pre-wrap"
+                            className="mt-2 border-s-2 border-line-2 ps-3 whitespace-pre-wrap"
                             dir="auto"
                           >
                             {item.f.body}
@@ -264,13 +292,13 @@ export function EmployeesView({
                   )}
                 </div>
               ) : (
-                <p className="text-muted">No meetings or feedback yet.</p>
+                <p className="text-muted">{t("No meetings or feedback yet.", "لا توجد اجتماعات أو ملاحظات بعد.")}</p>
               )}
             </PanelBody>
           </Panel>
 
           <Panel>
-            <PanelHeader title="Follow-up history" />
+            <PanelHeader title={t("Follow-up history", "سجل المتابعات")} />
             <PanelBody>
               {followups.length ? (
                 <ul className="space-y-2">
@@ -286,20 +314,20 @@ export function EmployeesView({
                         }
                       >
                         {f.status === "Closed"
-                          ? "Closed"
+                          ? t("Closed", "مغلقة")
                           : isOverdue(f)
-                            ? "Overdue"
-                            : "Open"}
+                            ? t("Overdue", "متأخرة")
+                            : t("Open", "مفتوحة")}
                       </Pill>
                       {f.item}
                       <span className="mono text-xs text-faint">
-                        {formatDate(f.targetDate)}
+                        {fmtDate(f.targetDate)}
                       </span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-muted">No follow-ups.</p>
+                <p className="text-muted">{t("No follow-ups.", "لا توجد متابعات.")}</p>
               )}
             </PanelBody>
           </Panel>

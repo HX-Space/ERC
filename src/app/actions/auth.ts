@@ -4,6 +4,7 @@ import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/lib/auth";
 import { query } from "@/lib/db";
+import { getT } from "@/lib/i18n-server";
 import { homeForRole } from "@/lib/rbac";
 import type { UserRole } from "@/types";
 
@@ -11,6 +12,7 @@ export async function loginAction(
   _prev: { error?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string }> {
+  const t = await getT();
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
 
@@ -22,11 +24,11 @@ export async function loginAction(
     });
 
     if (result?.error) {
-      return { error: "Invalid email or password." };
+      return { error: t("Invalid email or password.", "البريد الإلكتروني أو كلمة المرور غير صحيحة.") };
     }
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password." };
+      return { error: t("Invalid email or password.", "البريد الإلكتروني أو كلمة المرور غير صحيحة.") };
     }
     throw error;
   }

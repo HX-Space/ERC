@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { useLang, useT } from "@/components/i18n/lang";
 import { Button } from "@/components/ui/button";
 import { MeetingChannelMark } from "@/components/ui/meeting-channel";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
@@ -29,12 +30,15 @@ export function MeetingsView({
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const t = useT();
+  const uiLang = useLang();
+  const fmtDate = (iso: string | null | undefined) => formatDate(iso, uiLang);
 
   const openFollowups = followups.filter((f) => f.status === "Open");
   const attention = [
     ...followups.filter((f) => isOverdue(f)).slice(0, 3).map((f) => ({
       tone: "risk" as const,
-      label: "Overdue",
+      label: t("Overdue", "متأخر"),
       text: f.item,
       date: f.targetDate,
     })),
@@ -43,7 +47,7 @@ export function MeetingsView({
       .slice(0, 2)
       .map((f) => ({
         tone: "info" as const,
-        label: "Due soon",
+        label: t("Due soon", "مستحق قريباً"),
         text: f.item,
         date: f.targetDate,
       })),
@@ -67,26 +71,28 @@ export function MeetingsView({
     <>
       <header className="page-head">
         <div>
-          <h1>Meetings</h1>
+          <h1>{t("Meetings", "الاجتماعات")}</h1>
           <p>
-            {meetings.length} recorded · {openFollowups.length} open follow-ups
-            {overdueCount ? ` · ${overdueCount} overdue` : ""}
+            {t(
+              `${meetings.length} recorded · ${openFollowups.length} open follow-ups${overdueCount ? ` · ${overdueCount} overdue` : ""}`,
+              `${meetings.length} مُسجَّل · ${openFollowups.length} متابعة مفتوحة${overdueCount ? ` · ${overdueCount} متأخرة` : ""}`,
+            )}
           </p>
         </div>
         {canCreate ? (
           <Button
             variant="primary"
-            aria-label="Create new meeting"
+            aria-label={t("Create new meeting", "إنشاء اجتماع جديد")}
             onClick={() => setCreating(true)}
           >
             <Plus className="size-5" />
-            New meeting
+            {t("New meeting", "اجتماع جديد")}
           </Button>
         ) : null}
       </header>
 
       <Panel>
-        <PanelHeader title="Needs attention" />
+        <PanelHeader title={t("Needs attention", "يتطلب الانتباه")} />
         <PanelBody>
           {attention.length ? (
             <ul className="space-y-2">
@@ -94,24 +100,24 @@ export function MeetingsView({
                 <li key={`${item.text}-${i}`} className="flex flex-wrap items-center gap-2">
                   <Pill tone={item.tone}>{item.label}</Pill>
                   <span>{item.text}</span>
-                  <span className="mono text-xs text-faint">{formatDate(item.date)}</span>
+                  <span className="mono text-xs text-faint">{fmtDate(item.date)}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-muted">Nothing overdue or due soon.</p>
+            <p className="text-muted">{t("Nothing overdue or due soon.", "لا يوجد متأخر أو مستحق قريباً.")}</p>
           )}
         </PanelBody>
       </Panel>
 
       <Panel>
-        <PanelHeader title="Meeting history">
+        <PanelHeader title={t("Meeting history", "سجل الاجتماعات")}>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, team or ID"
-            aria-label="Search meetings"
+            placeholder={t("Search by name, team or ID", "ابحث بالاسم أو الفريق أو المعرّف")}
+            aria-label={t("Search meetings", "البحث في الاجتماعات")}
             className="field-control max-w-[260px] rounded-lg outline-none"
           />
         </PanelHeader>
@@ -119,12 +125,12 @@ export function MeetingsView({
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Date</th>
-                <th>Employee(s)</th>
-                <th>Type</th>
-                <th>Pulse</th>
-                <th>Status</th>
+                <th>{t("ID", "المعرّف")}</th>
+                <th>{t("Date", "التاريخ")}</th>
+                <th>{t("Employee(s)", "الموظف/الموظفون")}</th>
+                <th>{t("Type", "النوع")}</th>
+                <th>{t("Pulse", "النبض")}</th>
+                <th>{t("Status", "الحالة")}</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +145,7 @@ export function MeetingsView({
                       onClick={() => setSelectedId(m.id)}
                     >
                       <td className="mono">{m.id}</td>
-                      <td className="mono">{formatDate(m.meetingDate)}</td>
+                      <td className="mono">{fmtDate(m.meetingDate)}</td>
                       <td>
                         <div className="font-medium">
                           {(m.employeeNames ?? []).join(", ")}
@@ -149,26 +155,26 @@ export function MeetingsView({
                         </div>
                       </td>
                       <td>
-                        {m.meetingType}
+                        {m.meetingType === "Group" ? t("Group", "جماعي") : t("Individual", "فردي")}
                         <div className="mt-0.5">
-                          <MeetingChannelMark channel={m.channel} />
+                          <MeetingChannelMark lang={uiLang} channel={m.channel} />
                         </div>
                       </td>
                       <td className="mono">
                         {m.meetingType === "Group"
-                          ? "n/a"
+                          ? t("n/a", "لا ينطبق")
                           : formatPulse(avgPulse(m.pulse))}
                       </td>
                       <td>
                         <div className="flex flex-wrap gap-1">
-                          {m.risk ? <Pill tone="warn">Risk</Pill> : null}
+                          {m.risk ? <Pill tone="warn">{t("Risk", "خطر")}</Pill> : null}
                           {open ? (
                             <Pill
                               tone={
                                 fus.some((f) => isOverdue(f)) ? "risk" : "info"
                               }
                             >
-                              {open} open
+                              {open} {t("open", "مفتوح")}
                             </Pill>
                           ) : null}
                         </div>
@@ -179,7 +185,7 @@ export function MeetingsView({
               ) : (
                 <tr>
                   <td colSpan={6} className="py-10 text-center text-muted">
-                    No meetings match that search.
+                    {t("No meetings match that search.", "لا توجد اجتماعات تطابق البحث.")}
                   </td>
                 </tr>
               )}

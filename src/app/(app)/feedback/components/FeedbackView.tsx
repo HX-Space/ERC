@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { organizeFeedbackAction } from "@/app/actions/ai";
 import { saveFeedbackAction } from "@/app/actions/feedback";
+import { useLang, useT } from "@/components/i18n/lang";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Kpi } from "@/components/ui/kpi";
@@ -36,6 +37,9 @@ export function FeedbackView({
   isAdmin: boolean;
   cycle: string;
 }) {
+  const t = useT();
+  const uiLang = useLang();
+  const fmtDate = (iso: string | null | undefined) => formatDate(iso, uiLang);
   const router = useRouter();
   const { toast } = useToast();
   const [selected, setSelected] = useState<string | null>(null);
@@ -90,8 +94,8 @@ export function FeedbackView({
     if (!body) {
       toast(
         mode === "voice"
-          ? "Add a transcript before saving."
-          : "Write some feedback before saving.",
+          ? t("Add a transcript before saving.", "أضف النص المفرغ قبل الحفظ.")
+          : t("Write some feedback before saving.", "اكتب بعض الملاحظات قبل الحفظ."),
       );
       return;
     }
@@ -120,8 +124,8 @@ export function FeedbackView({
     }
     toast(
       status === "Submitted"
-        ? `Feedback submitted for ${employee.name}.`
-        : "Draft saved.",
+        ? t(`Feedback submitted for ${employee.name}.`, `تم إرسال الملاحظات بخصوص ${employee.name}.`)
+        : t("Draft saved.", "تم حفظ المسودة."),
     );
     setSelected(null);
     router.refresh();
@@ -144,7 +148,7 @@ export function FeedbackView({
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-      toast("This browser cannot record audio. Type the transcript instead.");
+      toast(t("This browser cannot record audio. Type the transcript instead.", "لا يستطيع هذا المتصفح تسجيل الصوت. اكتب النص المفرغ بدلاً من ذلك."));
       return;
     }
     try {
@@ -164,13 +168,13 @@ export function FeedbackView({
       rec.start();
       setRecording(true);
     } catch {
-      toast("Microphone access was blocked. Allow it in the browser, or type the transcript.");
+      toast(t("Microphone access was blocked. Allow it in the browser, or type the transcript.", "تم حظر الوصول إلى الميكروفون. اسمح به من المتصفح، أو اكتب النص المفرغ."));
     }
   }
 
   async function transcribeAudio() {
     if (!audio.current) {
-      toast("Record a voice note first.");
+      toast(t("Record a voice note first.", "سجّل مقطعاً صوتياً أولاً."));
       return;
     }
     setTranscribing(true);
@@ -181,19 +185,22 @@ export function FeedbackView({
     setTranscribing(false);
     const data = (await res?.json().catch(() => null)) as { text?: string; error?: string } | null;
     if (!res?.ok || !data?.text) {
-      toast(data?.error ?? "Transcription failed. Type the transcript instead.");
+      toast(data?.error ?? t("Transcription failed. Type the transcript instead.", "فشل التفريغ. اكتب النص المفرغ بدلاً من ذلك."));
       return;
     }
     const heard = data.text;
     setTranscript((t) => (t.trim() ? `${t.trim()}\n${heard}` : heard));
     setAi(null);
-    toast("Transcript added. Check it before saving.");
+    toast(t("Transcript added. Check it before saving.", "تمت إضافة النص المفرغ. راجعه قبل الحفظ."));
   }
 
   if (!manager) {
     return (
       <p className="text-muted">
-        No manager profile linked. Ask an admin to assign a manager code.
+        {t(
+          "No manager profile linked. Ask an admin to assign a manager code.",
+          "لم يتم ربط ملف مدير. اطلب من المسؤول تعيين رمز المدير.",
+        )}
       </p>
     );
   }
@@ -202,14 +209,14 @@ export function FeedbackView({
     <>
       <header className="page-head">
         <div>
-          <h1>Feedback</h1>
+          <h1>{t("Feedback", "الملاحظات")}</h1>
           <p>
             {manager.name} · {manager.title} · {cycle}
           </p>
         </div>
         {isAdmin ? (
           <select
-            aria-label="Switch manager"
+            aria-label={t("Switch manager", "تبديل المدير")}
             className="rounded-lg border border-line-2 px-3 py-2 outline-none"
             value={manager.code}
             onChange={(e) => router.push(`/feedback?mgr=${e.target.value}`)}
@@ -224,9 +231,9 @@ export function FeedbackView({
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Kpi label="Total employees" value={team.length} />
-        <Kpi label="Submitted" value={submitted} tone="ok" />
-        <Kpi label="Pending" value={team.length - submitted} tone="warn" />
+        <Kpi label={t("Total employees", "إجمالي الموظفين")} value={team.length} />
+        <Kpi label={t("Submitted", "تم الإرسال")} value={submitted} tone="ok" />
+        <Kpi label={t("Pending", "قيد الانتظار")} value={team.length - submitted} tone="warn" />
       </div>
 
       <div
@@ -235,21 +242,21 @@ export function FeedbackView({
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Feedback completed"
+        aria-label={t("Feedback completed", "اكتمال الملاحظات")}
       >
         <i className="block h-full bg-accent" style={{ width: `${pct}%` }} />
       </div>
 
       <Panel>
-        <PanelHeader title="Your team" />
+        <PanelHeader title={t("Your team", "فريقك")} />
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-start">
             <thead>
               <tr className="border-b border-line text-[12px] text-muted">
-                <th className="px-3 py-2">Employee</th>
-                <th className="px-3 py-2">Code</th>
-                <th className="px-3 py-2">Department / Team</th>
-                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">{t("Employee", "الموظف")}</th>
+                <th className="px-3 py-2">{t("Code", "الرمز")}</th>
+                <th className="px-3 py-2">{t("Department / Team", "القسم / الفريق")}</th>
+                <th className="px-3 py-2">{t("Status", "الحالة")}</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -269,25 +276,25 @@ export function FeedbackView({
                     </td>
                     <td className="px-3 py-3">
                       {st === "Submitted" ? (
-                        <Pill tone="ok">Submitted</Pill>
+                        <Pill tone="ok">{t("Submitted", "تم الإرسال")}</Pill>
                       ) : st === "Draft" ? (
-                        <Pill tone="info">Draft saved</Pill>
+                        <Pill tone="info">{t("Draft saved", "تم حفظ المسودة")}</Pill>
                       ) : (
-                        <Pill tone="warn">Pending</Pill>
+                        <Pill tone="warn">{t("Pending", "قيد الانتظار")}</Pill>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-right">
+                    <td className="px-3 py-3 text-end">
                       <Button
                         size="sm"
                         variant={st === "Submitted" ? "ghost" : "default"}
-                        aria-label={`Feedback for ${e.name}`}
+                        aria-label={t(`Feedback for ${e.name}`, `الملاحظات بخصوص ${e.name}`)}
                         onClick={() => open(e.code)}
                       >
                         {st === "Submitted"
-                          ? "View"
+                          ? t("View", "عرض")
                           : st === "Draft"
-                            ? "Continue"
-                            : "Give feedback"}
+                            ? t("Continue", "متابعة")
+                            : t("Give feedback", "تقديم ملاحظات")}
                       </Button>
                     </td>
                   </tr>
@@ -300,49 +307,49 @@ export function FeedbackView({
 
       <Drawer
         open={Boolean(selected && employee)}
-        title="Employee feedback"
+        title={t("Employee feedback", "ملاحظات الموظف")}
         onClose={() => setSelected(null)}
         footer={
           locked ? (
-            <Button aria-label="Close feedback" onClick={() => setSelected(null)}>
-              Close
+            <Button aria-label={t("Close feedback", "إغلاق الملاحظات")} onClick={() => setSelected(null)}>
+              {t("Close", "إغلاق")}
             </Button>
           ) : confirming ? (
             <>
               <Button
-                aria-label="Back to edit feedback"
+                aria-label={t("Back to edit feedback", "الرجوع لتعديل الملاحظات")}
                 onClick={() => setConfirming(false)}
               >
-                Back to edit
+                {t("Back to edit", "الرجوع للتعديل")}
               </Button>
               <Button
                 variant="primary"
-                aria-label="Confirm feedback submission"
+                aria-label={t("Confirm feedback submission", "تأكيد إرسال الملاحظات")}
                 disabled={saving}
                 onClick={() => save("Submitted")}
               >
-                Confirm submission
+                {t("Confirm submission", "تأكيد الإرسال")}
               </Button>
             </>
           ) : (
             <>
-              <Button aria-label="Cancel feedback" onClick={() => setSelected(null)}>
-                Cancel
+              <Button aria-label={t("Cancel feedback", "إلغاء الملاحظات")} onClick={() => setSelected(null)}>
+                {t("Cancel", "إلغاء")}
               </Button>
               <Button
-                aria-label="Save feedback draft"
+                aria-label={t("Save feedback draft", "حفظ مسودة الملاحظات")}
                 disabled={saving}
                 onClick={() => save("Draft")}
               >
-                Save draft
+                {t("Save draft", "حفظ المسودة")}
               </Button>
               <Button
                 variant="primary"
-                aria-label="Review and submit feedback"
+                aria-label={t("Review and submit feedback", "مراجعة إرسال الملاحظات")}
                 disabled={saving}
                 onClick={() => save("Submitted")}
               >
-                Review & submit
+                {t("Review & submit", "مراجعة وإرسال")}
               </Button>
             </>
           )
@@ -363,11 +370,11 @@ export function FeedbackView({
                 </div>
                 {locked ? (
                   <Pill tone="ok">
-                    Submitted {formatDate(existing!.feedbackDate)}
+                    {t("Submitted", "تم الإرسال")} {fmtDate(existing!.feedbackDate)}
                   </Pill>
                 ) : (
                   <Pill tone={existing?.status === "Draft" ? "info" : "warn"}>
-                    {existing?.status === "Draft" ? "Draft" : "Pending"}
+                    {existing?.status === "Draft" ? t("Draft", "مسودة") : t("Pending", "قيد الانتظار")}
                   </Pill>
                 )}
               </div>
@@ -375,8 +382,8 @@ export function FeedbackView({
 
             {locked ? (
               <section className="space-y-2 rounded-[var(--radius)] border border-line bg-surface p-4">
-                <h3 className="text-sm">Your feedback</h3>
-                <blockquote className="border-l-2 border-line-2 pl-3 whitespace-pre-wrap" dir="auto">
+                <h3 className="text-sm">{t("Your feedback", "ملاحظاتك")}</h3>
+                <blockquote className="border-s-2 border-line-2 ps-3 whitespace-pre-wrap" dir="auto">
                   {existing!.body}
                 </blockquote>
               </section>
@@ -385,8 +392,8 @@ export function FeedbackView({
                 <div className="inline-flex overflow-hidden rounded-[6px] border border-line-2">
                   {(
                     [
-                      ["written", "Write"],
-                      ["voice", "Record voice note"],
+                      ["written", t("Write", "كتابة")],
+                      ["voice", t("Record voice note", "تسجيل مقطع صوتي")],
                     ] as const
                   ).map(([v, label]) => (
                     <button
@@ -412,7 +419,7 @@ export function FeedbackView({
                 {mode === "written" ? (
                   <label className="flex flex-col gap-1.5 rounded-[var(--radius)] border border-line bg-surface p-4">
                     <span className="text-xs font-semibold text-muted">
-                      Written feedback
+                      {t("Written feedback", "الملاحظات المكتوبة")}
                     </span>
                     <textarea
                       rows={9}
@@ -420,43 +427,57 @@ export function FeedbackView({
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       className="rounded-lg border border-line-2 px-3 py-2 outline-none"
-                      placeholder="Strengths, growth areas, concerns…"
+                      placeholder={t(
+                        "Strengths, growth areas, concerns…",
+                        "نقاط القوة، مجالات التطوير، المخاوف…",
+                      )}
                     />
                   </label>
                 ) : (
                   <section className="space-y-3 rounded-[var(--radius)] border border-line bg-surface p-4">
                     <div className="flex flex-col items-center gap-3 rounded-[var(--radius)] border border-dashed border-line-2 bg-surface-2 p-5">
                       <Pill tone={recording ? "risk" : hasAudio ? "ok" : "mute"}>
-                        {recording ? "Recording…" : hasAudio ? "Voice note ready" : "No recording yet"}
+                        {recording
+                          ? t("Recording…", "جارٍ التسجيل…")
+                          : hasAudio
+                            ? t("Voice note ready", "المقطع الصوتي جاهز")
+                            : t("No recording yet", "لا يوجد تسجيل بعد")}
                       </Pill>
-                      <Button aria-label={recording ? "Stop recording" : "Start recording"} onClick={toggleRecording}>
-                        {recording ? "Stop recording" : hasAudio ? "Record again" : "Start recording"}
+                      <Button
+                        aria-label={recording ? t("Stop recording", "إيقاف التسجيل") : t("Start recording", "بدء التسجيل")}
+                        onClick={toggleRecording}
+                      >
+                        {recording
+                          ? t("Stop recording", "إيقاف التسجيل")
+                          : hasAudio
+                            ? t("Record again", "إعادة التسجيل")
+                            : t("Start recording", "بدء التسجيل")}
                       </Button>
                       <Button
                         variant="ai"
-                        aria-label="Transcribe voice note"
+                        aria-label={t("Transcribe voice note", "تفريغ المقطع الصوتي")}
                         disabled={transcribing || recording || !hasAudio}
                         onClick={transcribeAudio}
                       >
-                        {transcribing ? "Transcribing…" : "Transcribe"}
+                        {transcribing ? t("Transcribing…", "جارٍ التفريغ…") : t("Transcribe", "تفريغ")}
                       </Button>
                       <label className="flex w-full max-w-[260px] flex-col gap-1.5">
                         <span className="text-xs font-semibold text-muted">
-                          Spoken language
+                          {t("Spoken language", "لغة الحديث")}
                         </span>
                         <select
                           value={lang}
                           onChange={(e) => setLang(e.target.value)}
                           className="rounded-lg border border-line-2 px-3 py-2 outline-none"
                         >
-                          <option>Egyptian Arabic</option>
-                          <option>English</option>
+                          <option value="Egyptian Arabic">{t("Egyptian Arabic", "العربية المصرية")}</option>
+                          <option value="English">{t("English", "الإنجليزية")}</option>
                         </select>
                       </label>
                     </div>
                     <label className="flex flex-col gap-1.5">
                       <span className="text-xs font-semibold text-muted">
-                        Transcript
+                        {t("Transcript", "النص المفرغ")}
                       </span>
                       <textarea
                         rows={7}
@@ -471,35 +492,41 @@ export function FeedbackView({
 
                 <Button
                   variant="ai"
-                  aria-label="Organise feedback with AI"
+                  aria-label={t("Organise feedback with AI", "تنظيم الملاحظات بالذكاء الاصطناعي")}
                   disabled={organising}
                   onClick={() => {
                     const body = mode === "voice" ? transcript : text;
                     if (!body.trim()) {
-                      toast("Add feedback text first.");
+                      toast(t("Add feedback text first.", "أضف نص الملاحظات أولاً."));
                       return;
                     }
                     organise(body);
                   }}
                 >
-                  {organising ? "Organising…" : "Organise with AI"}
+                  {organising
+                    ? t("Organising…", "جارٍ التنظيم…")
+                    : t("Organise with AI", "تنظيم بالذكاء الاصطناعي")}
                 </Button>
 
                 {ai ? (
                   <div className="space-y-2 rounded-[var(--radius)] border border-ai bg-ai-soft p-3">
                     <div className="flex flex-wrap items-center gap-2 font-semibold text-ai">
-                      Structured summary{" "}
+                      {t("Structured summary", "ملخص منظم")}{" "}
                       <Pill tone="ai">
-                        {ai.source === "openai" ? ai.model : ai.model === "saved" ? "Saved" : "Local engine"}
+                        {ai.source === "openai"
+                          ? ai.model
+                          : ai.model === "saved"
+                            ? t("Saved", "محفوظ")
+                            : t("Local engine", "المحرك المحلي")}
                       </Pill>
                     </div>
                     {ai.notice ? <p className="text-[12px] text-muted">{ai.notice}</p> : null}
                     {(
                       [
-                        ["strengths", "Strengths"],
-                        ["development", "Development"],
-                        ["concerns", "Concerns"],
-                        ["recommendations", "Recommendations"],
+                        ["strengths", t("Strengths", "نقاط القوة")],
+                        ["development", t("Development", "مجالات التطوير")],
+                        ["concerns", t("Concerns", "المخاوف")],
+                        ["recommendations", t("Recommendations", "التوصيات")],
                       ] as const
                     ).map(([key, label]) =>
                       ai.summary[key]?.length ? (
@@ -507,7 +534,7 @@ export function FeedbackView({
                           <small className="text-[12px] font-medium text-muted">
                             {label}
                           </small>
-                          <ul className="mt-1 list-disc pl-4" dir="auto">
+                          <ul className="mt-1 list-disc ps-4" dir="auto">
                             {ai.summary[key].map((s) => (
                               <li key={s}>{s}</li>
                             ))}

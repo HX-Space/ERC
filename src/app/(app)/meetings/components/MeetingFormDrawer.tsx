@@ -5,12 +5,14 @@ import { Monitor, Phone } from "lucide-react";
 import { assistMeetingAction } from "@/app/actions/ai";
 import { createMeetingAction } from "@/app/actions/meetings";
 import { Button } from "@/components/ui/button";
+import { useLang, useT } from "@/components/i18n/lang";
 import { Drawer } from "@/components/ui/drawer";
 import { channelLabel } from "@/components/ui/meeting-channel";
 import { Pill } from "@/components/ui/pill";
+import { RichTextEditor } from "@/components/ui/rich-text";
 import { useToast } from "@/components/ui/toast";
 import type { MeetingAiAssist } from "@/lib/ai";
-import { OUTCOME_SECTIONS, PULSE_INDICATORS, PULSE_SCALE } from "@/lib/constants";
+import { OUTCOME_SECTIONS, PULSE_INDICATORS, PULSE_SCALE, PULSE_SCALE_AR } from "@/lib/constants";
 import { addDaysIso, todayIso } from "@/lib/format";
 import { avgPulse, emptyPulse, formatPulse } from "@/lib/pulse";
 import type {
@@ -74,6 +76,7 @@ export function MeetingFormDrawer({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const t = useT();
   const [form, setForm] = useState<FormState>(blank);
   const [ai, setAi] = useState<
     (MeetingAiAssist & { source: "openai" | "local"; model: string; notice?: string }) | null
@@ -157,35 +160,36 @@ export function MeetingFormDrawer({
     }
 
     // Fill dept/unit/team from first employee if blank
-    toast(`${result.id} saved to meeting history.`);
+    toast(t(`${result.id} saved to meeting history.`, `تم حفظ ${result.id} في سجل الاجتماعات.`));
     close();
   }
 
   return (
     <Drawer
       open={open}
-      title="New meeting record"
+      title={t("New meeting record", "سجل اجتماع جديد")}
       onClose={close}
+      width={1040}
       footer={
         <>
-          <Button aria-label="Cancel new meeting" onClick={close}>
-            Cancel
+          <Button aria-label={t("Cancel new meeting", "إلغاء سجل الاجتماع الجديد")} onClick={close}>
+            {t("Cancel", "إلغاء")}
           </Button>
           <Button
             variant="primary"
-            aria-label="Save meeting"
+            aria-label={t("Save meeting", "حفظ الاجتماع")}
             disabled={saving}
             onClick={save}
           >
-            {saving ? "Saving…" : "Save meeting"}
+            {saving ? t("Saving…", "جارٍ الحفظ…") : t("Save meeting", "حفظ الاجتماع")}
           </Button>
         </>
       }
     >
       <section className="space-y-3 rounded-[var(--radius)] border border-line bg-surface p-4">
-        <h3 className="text-sm">Meeting information</h3>
+        <h3 className="text-sm">{t("Meeting information", "معلومات الاجتماع")}</h3>
         <div className="grid gap-3 md:grid-cols-3">
-          <Field label="Department">
+          <Field label={t("Department", "القسم")}>
             <select
               className="w-full rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
               value={form.department}
@@ -198,13 +202,13 @@ export function MeetingFormDrawer({
                 }))
               }
             >
-              <option value="">All departments</option>
+              <option value="">{t("All departments", "كل الأقسام")}</option>
               {depts.map((d) => (
                 <option key={d}>{d}</option>
               ))}
             </select>
           </Field>
-          <Field label="Unit">
+          <Field label={t("Unit", "الوحدة")}>
             <select
               className="w-full rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
               value={form.unit}
@@ -212,27 +216,28 @@ export function MeetingFormDrawer({
                 setForm((f) => ({ ...f, unit: e.target.value, team: "" }))
               }
             >
-              <option value="">All units</option>
+              <option value="">{t("All units", "كل الوحدات")}</option>
               {units.map((u) => (
                 <option key={u}>{u}</option>
               ))}
             </select>
           </Field>
-          <Field label="Team">
+          <Field label={t("Team", "الفريق")}>
             <select
               className="w-full rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
               value={form.team}
               onChange={(e) => setForm((f) => ({ ...f, team: e.target.value }))}
             >
-              <option value="">All teams</option>
+              <option value="">{t("All teams", "كل الفرق")}</option>
               {teams.map((t) => (
                 <option key={t}>{t}</option>
               ))}
             </select>
           </Field>
-          <Field label="Meeting type">
+          <Field label={t("Meeting type", "نوع الاجتماع")}>
             <Seg
               options={["Individual", "Group"]}
+              labels={{ Individual: t("Individual", "فردي"), Group: t("Group", "جماعي") }}
               value={form.meetingType}
               onChange={(v) =>
                 setForm((f) => ({
@@ -244,13 +249,13 @@ export function MeetingFormDrawer({
               }
             />
           </Field>
-          <Field label="Channel">
+          <Field label={t("Channel", "القناة")}>
             <ChannelSeg
               value={form.channel}
               onChange={(v) => setForm((f) => ({ ...f, channel: v }))}
             />
           </Field>
-          <Field label="Meeting date">
+          <Field label={t("Meeting date", "تاريخ الاجتماع")}>
             <input
               type="date"
               max={todayIso()}
@@ -262,7 +267,7 @@ export function MeetingFormDrawer({
             />
           </Field>
         </div>
-        <Field label={form.meetingType === "Group" ? "Employees" : "Employee"}>
+        <Field label={form.meetingType === "Group" ? t("Employees", "الموظفون") : t("Employee", "الموظف")}>
           <div className="mb-2 flex flex-wrap gap-2">
             {form.employeeCodes.map((code) => {
               const emp = employees.find((e) => e.code === code);
@@ -274,7 +279,7 @@ export function MeetingFormDrawer({
                   {emp?.name ?? code}
                   <button
                     type="button"
-                    aria-label={`Remove ${emp?.name ?? code}`}
+                    aria-label={t(`Remove ${emp?.name ?? code}`, `إزالة ${emp?.name ?? code}`)}
                     className="grid size-5 cursor-pointer place-items-center rounded-full outline-none hover:bg-accent hover:text-accent-ink"
                     onClick={() =>
                       setForm((f) => ({
@@ -291,7 +296,7 @@ export function MeetingFormDrawer({
           </div>
           {canAdd ? (
             <select
-              aria-label="Add employee"
+              aria-label={t("Add employee", "إضافة موظف")}
               className="w-full rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
               value=""
               onChange={(e) => {
@@ -307,7 +312,7 @@ export function MeetingFormDrawer({
                 }));
               }}
             >
-              <option value="">+ Add employee ({pool.length} available)</option>
+              <option value="">{t(`+ Add employee (${pool.length} available)`, `+ إضافة موظف (${pool.length} متاح)`)}</option>
               {pool.map((e) => (
                 <option key={e.code} value={e.code}>
                   {e.name} · {e.code} · {e.team}
@@ -315,13 +320,13 @@ export function MeetingFormDrawer({
               ))}
             </select>
           ) : (
-            <p className="text-xs text-faint">Switch to Group to add more participants.</p>
+            <p className="text-xs text-faint">{t("Switch to Group to add more participants.", "انتقل إلى «جماعي» لإضافة مشاركين آخرين.")}</p>
           )}
         </Field>
       </section>
 
       <section className="space-y-3 rounded-[var(--radius)] border border-line bg-surface p-4">
-        <h3 className="text-sm">Meeting outcomes</h3>
+        <h3 className="text-sm">{t("Meeting outcomes", "مخرجات الاجتماع")}</h3>
         {OUTCOME_SECTIONS.map((sec) => (
           <div key={sec.key} className="grid grid-cols-[4px_minmax(0,1fr)] gap-3">
             <i
@@ -337,21 +342,20 @@ export function MeetingFormDrawer({
                         : "rounded bg-line-2"
               }
             />
-            <Field label={`${sec.label} · ${sec.hint}`}>
-              <textarea
-                rows={2}
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="text-xs font-semibold text-muted">{`${t(sec.label, sec.labelAr)} · ${t(sec.hint, sec.hintAr)}`}</span>
+              <RichTextEditor
+                label={t(sec.label, sec.labelAr)}
                 value={form[sec.key]}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, [sec.key]: e.target.value }))
-                }
-                className="w-full rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
+                onChange={(html) => setForm((f) => ({ ...f, [sec.key]: html }))}
+                minHeight={240}
               />
-            </Field>
+            </div>
           </div>
         ))}
         <Button
           variant="ai"
-          aria-label="Analyse notes with AI"
+          aria-label={t("Analyse notes with AI", "تحليل الملاحظات بالذكاء الاصطناعي")}
           disabled={analysing}
           onClick={async () => {
             setAnalysing(true);
@@ -372,32 +376,32 @@ export function MeetingFormDrawer({
             setForm((f) => ({ ...f, aiSummary: result.summary, aiAccepted: false }));
           }}
         >
-          {analysing ? "Analysing…" : "Analyse notes with AI"}
+          {analysing ? t("Analysing…", "جارٍ التحليل…") : t("Analyse notes with AI", "تحليل الملاحظات بالذكاء الاصطناعي")}
         </Button>
         {ai ? (
           <div className="space-y-2 rounded-[var(--radius)] border border-ai bg-ai-soft p-3">
             <div className="flex flex-wrap items-center gap-2 font-semibold text-ai">
-              AI suggestions{" "}
-              <Pill tone="ai">{ai.source === "openai" ? ai.model : "Local engine"}</Pill>
+              {t("AI suggestions", "اقتراحات الذكاء الاصطناعي")}{" "}
+              <Pill tone="ai">{ai.source === "openai" ? ai.model : t("Local engine", "المحرك المحلي")}</Pill>
             </div>
             {ai.notice ? <p className="text-[12px] text-muted">{ai.notice}</p> : null}
             {ai.summary ? (
               <div className="rounded-lg bg-surface p-3 text-sm">
                 <small className="text-[12px] font-medium text-muted">
-                  Meeting summary
+                  {t("Meeting summary", "ملخص الاجتماع")}
                 </small>
                 <p className="mt-1" dir="auto">{ai.summary}</p>
                 <div className="mt-2 flex gap-2">
                   <Button
                     size="sm"
-                    aria-label="Accept AI summary"
+                    aria-label={t("Accept AI summary", "قبول ملخص الذكاء الاصطناعي")}
                     aria-pressed={form.aiAccepted}
                     onClick={() => {
                       setForm((f) => ({ ...f, aiAccepted: true }));
-                      toast("Summary will be saved with the meeting.");
+                      toast(t("Summary will be saved with the meeting.", "سيُحفظ الملخص مع الاجتماع."));
                     }}
                   >
-                    {form.aiAccepted ? "Accepted" : "Accept"}
+                    {form.aiAccepted ? t("Accepted", "مقبول") : t("Accept", "قبول")}
                   </Button>
                 </div>
               </div>
@@ -406,13 +410,13 @@ export function MeetingFormDrawer({
               <div key={i} className="flex items-start justify-between gap-2 rounded-lg bg-surface p-3 text-sm">
                 <div>
                   <small className="text-[12px] font-medium text-muted">
-                    Suggested follow-up
+                    {t("Suggested follow-up", "متابعة مقترحة")}
                   </small>
                   <p className="mt-1">{fu.item}</p>
                 </div>
                 <Button
                   size="sm"
-                  aria-label="Add suggested follow-up"
+                  aria-label={t("Add suggested follow-up", "إضافة المتابعة المقترحة")}
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
@@ -420,7 +424,7 @@ export function MeetingFormDrawer({
                     }))
                   }
                 >
-                  Add follow-up
+                  {t("Add follow-up", "إضافة متابعة")}
                 </Button>
               </div>
             ))}
@@ -432,13 +436,13 @@ export function MeetingFormDrawer({
         <section className="space-y-3 rounded-[var(--radius)] border border-line bg-surface p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm">Employee Pulse Review</h3>
+              <h3 className="text-sm">{t("Employee Pulse Review", "مراجعة النبض للموظف")}</h3>
               <p className="text-xs text-faint">
-                Development observation, not a performance appraisal.
+                {t("Development observation, not a performance appraisal.", "ملاحظة تطويرية، وليست تقييم أداء.")}
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-muted">Meeting pulse</div>
+            <div className="text-end">
+              <div className="text-xs text-muted">{t("Meeting pulse", "نبض الاجتماع")}</div>
               <b className="font-[family-name:var(--font-display)] text-2xl">
                 {formatPulse(avgPulse(form.pulse))}
               </b>
@@ -450,16 +454,16 @@ export function MeetingFormDrawer({
               className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-2 last:border-0"
             >
               <div>
-                <b className="text-sm">{ind.label}</b>
-                <small className="block text-[11.5px] text-faint">{ind.hint}</small>
+                <b className="text-sm">{t(ind.label, ind.labelAr)}</b>
+                <small className="block text-[11.5px] text-faint">{t(ind.hint, ind.hintAr)}</small>
               </div>
-              <div className="flex gap-1" role="group" aria-label={ind.label}>
+              <div className="flex gap-1" role="group" aria-label={t(ind.label, ind.labelAr)}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     type="button"
-                    title={PULSE_SCALE[n]}
-                    aria-label={`${ind.label} ${n}`}
+                    title={t(PULSE_SCALE[n], PULSE_SCALE_AR[n])}
+                    aria-label={`${t(ind.label, ind.labelAr)} ${n}`}
                     aria-pressed={form.pulse[ind.key] === n}
                     className={`grid size-8 cursor-pointer place-items-center rounded-md border outline-none mono text-xs ${
                       form.pulse[ind.key] === n
@@ -481,7 +485,7 @@ export function MeetingFormDrawer({
                 ))}
                 <button
                   type="button"
-                  aria-label={`${ind.label} not observed`}
+                  aria-label={t(`${ind.label} not observed`, `${ind.labelAr} لم تتم الملاحظة`)}
                   aria-pressed={form.pulse[ind.key] === "NO"}
                   className={`cursor-pointer rounded-md border px-2 outline-none mono text-[11px] ${
                     form.pulse[ind.key] === "NO"
@@ -498,14 +502,15 @@ export function MeetingFormDrawer({
                     }))
                   }
                 >
-                  N/O
+                  {t("N/O", "غ/م")}
                 </button>
               </div>
             </div>
           ))}
-          <Field label="Reviewer notes (optional)">
+          <Field label={t("Reviewer notes (optional)", "ملاحظات المراجع (اختياري)")}>
             <textarea
-              rows={2}
+              rows={4}
+              dir="auto"
               value={form.pulseNote}
               onChange={(e) => setForm((f) => ({ ...f, pulseNote: e.target.value }))}
               className="w-full rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
@@ -514,16 +519,16 @@ export function MeetingFormDrawer({
         </section>
       ) : (
         <section className="rounded-[var(--radius)] border border-line bg-surface p-4 text-sm text-muted">
-          Pulse ratings are recorded for individual meetings only.
+          {t("Pulse ratings are recorded for individual meetings only.", "تُسجَّل تقييمات النبض للاجتماعات الفردية فقط.")}
         </section>
       )}
 
       <section className="space-y-3 rounded-[var(--radius)] border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm">Follow-ups from this meeting</h3>
+          <h3 className="text-sm">{t("Follow-ups from this meeting", "المتابعات من هذا الاجتماع")}</h3>
           <Button
             size="sm"
-            aria-label="Add follow-up"
+            aria-label={t("Add follow-up", "إضافة متابعة")}
             onClick={() =>
               setForm((f) => ({
                 ...f,
@@ -534,14 +539,15 @@ export function MeetingFormDrawer({
               }))
             }
           >
-            + Add follow-up
+            {t("+ Add follow-up", "+ إضافة متابعة")}
           </Button>
         </div>
         {form.followups.length ? (
           form.followups.map((fu, i) => (
             <div key={i} className="grid gap-2 md:grid-cols-[1fr_160px_auto] md:items-end">
-              <Field label="Follow-up item">
+              <Field label={t("Follow-up item", "بند المتابعة")}>
                 <input
+                  dir="auto"
                   value={fu.item}
                   onChange={(e) =>
                     setForm((f) => {
@@ -553,7 +559,7 @@ export function MeetingFormDrawer({
                   className="w-full rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
                 />
               </Field>
-              <Field label="Target date">
+              <Field label={t("Target date", "التاريخ المستهدف")}>
                 <input
                   type="date"
                   value={fu.targetDate}
@@ -570,7 +576,7 @@ export function MeetingFormDrawer({
               <Button
                 size="sm"
                 variant="ghost"
-                aria-label="Remove follow-up"
+                aria-label={t("Remove follow-up", "إزالة المتابعة")}
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
@@ -578,12 +584,12 @@ export function MeetingFormDrawer({
                   }))
                 }
               >
-                Remove
+                {t("Remove", "إزالة")}
               </Button>
             </div>
           ))
         ) : (
-          <p className="text-faint">None yet.</p>
+          <p className="text-faint">{t("None yet.", "لا يوجد بعد.")}</p>
         )}
       </section>
     </Drawer>
@@ -607,10 +613,12 @@ function Field({
 
 function Seg({
   options,
+  labels,
   value,
   onChange,
 }: {
   options: string[];
+  labels: Record<string, string>;
   value: string;
   onChange: (v: string) => void;
 }) {
@@ -621,7 +629,7 @@ function Seg({
           key={opt}
           type="button"
           aria-pressed={value === opt}
-          aria-label={opt}
+          aria-label={labels[opt] ?? opt}
           className={`cursor-pointer px-3 py-2 text-sm outline-none ${
             value === opt
               ? "bg-active font-medium text-ink"
@@ -629,7 +637,7 @@ function Seg({
           }`}
           onClick={() => onChange(opt)}
         >
-          {opt}
+          {labels[opt] ?? opt}
         </button>
       ))}
     </div>
@@ -643,6 +651,7 @@ function ChannelSeg({
   value: MeetingChannel;
   onChange: (v: MeetingChannel) => void;
 }) {
+  const uiLang = useLang();
   return (
     <div className="grid w-full grid-cols-3 overflow-hidden rounded-[6px] border border-line-2">
       {CHANNEL_OPTIONS.map((opt) => {
@@ -652,8 +661,8 @@ function ChannelSeg({
             key={opt}
             type="button"
             aria-pressed={active}
-            aria-label={channelLabel(opt)}
-            title={channelLabel(opt)}
+            aria-label={channelLabel(opt, uiLang)}
+            title={channelLabel(opt, uiLang)}
             className={`inline-flex h-10 cursor-pointer items-center justify-center outline-none ${
               active ? "bg-active font-medium text-ink" : "text-muted hover:bg-surface-2"
             }`}

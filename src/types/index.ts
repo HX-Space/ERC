@@ -68,6 +68,8 @@ export interface MeetingRecord {
   negative: string;
   recommendation: string;
   followUpNote: string;
+  /** The same outcomes as sanitised HTML (or plain text for older records), for display. */
+  outcomeHtml: Record<"positive" | "risk" | "negative" | "recommendation" | "followUpNote", string>;
   pulse: PulseScores | null;
   pulseNote: string;
   aiSummary: string;

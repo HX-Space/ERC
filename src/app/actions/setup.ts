@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { signIn } from "@/lib/auth";
+import { getT } from "@/lib/i18n-server";
 import { createFirstAdmin } from "@/repositories/users";
 
 const schema = z
@@ -21,6 +22,7 @@ export async function setupAdminAction(
   _prev: { error?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string }> {
+  const t = await getT();
   const parsed = schema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -28,12 +30,14 @@ export async function setupAdminAction(
     confirm: formData.get("confirm"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the form." };
+    return { error: parsed.error.issues[0]?.message ?? t("Check the form.", "تحقق من النموذج.") };
   }
 
   const created = await createFirstAdmin(parsed.data);
   if (!created) {
-    return { error: "An admin account already exists. Sign in instead." };
+    return {
+      error: t("An admin account already exists. Sign in instead.", "يوجد حساب مسؤول بالفعل. سجّل الدخول بدلاً من ذلك."),
+    };
   }
 
   await signIn("credentials", {

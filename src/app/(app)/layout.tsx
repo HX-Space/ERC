@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { viewsForRole } from "@/lib/rbac";
 import { isOverdue } from "@/lib/followups";
-import { ROLE_LABELS } from "@/lib/constants";
+import { ROLE_LABELS, ROLE_LABELS_AR } from "@/lib/constants";
 import { APP_TIMEZONE } from "@/lib/format";
+import { localeFor } from "@/lib/i18n";
+import { getLang } from "@/lib/i18n-server";
 import { listFollowups } from "@/repositories/followups";
 import { AppShell } from "@/components/shell/app-sidebar";
 
@@ -15,10 +17,11 @@ export default async function AppLayout({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
+  const lang = await getLang();
   const followups = await listFollowups();
   const overdueCount = followups.filter((f) => isOverdue(f)).length;
   const items = viewsForRole(session.user.role);
-  const todayLabel = new Date().toLocaleDateString("en-GB", {
+  const todayLabel = new Date().toLocaleDateString(localeFor(lang), {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -31,7 +34,9 @@ export default async function AppLayout({
       items={items}
       overdueCount={overdueCount}
       userName={session.user.name ?? session.user.email ?? ""}
-      roleLabel={ROLE_LABELS[session.user.role]}
+      roleLabel={
+        lang === "ar" ? ROLE_LABELS_AR[session.user.role] : ROLE_LABELS[session.user.role]
+      }
       todayLabel={todayLabel}
     >
       {children}

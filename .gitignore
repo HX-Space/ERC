@@ -44,3 +44,7 @@ next-env.d.ts
 /.e2e/
 /.taste-skill/
 !.env.example
+
+# client test data (contains test passwords)
+/db/client-test-data.sql
+/db/client-test-cleanup.sql

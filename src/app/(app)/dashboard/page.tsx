@@ -1,5 +1,5 @@
 import { requireView } from "@/lib/session";
-import { canCreateMeetings } from "@/lib/rbac";
+import { canAccessView, canCreateMeetings } from "@/lib/rbac";
 import { FEEDBACK_CYCLE } from "@/lib/constants";
 import { buildAnalytics } from "@/lib/analytics";
 import { avgPulse } from "@/lib/pulse";
@@ -30,6 +30,11 @@ export default async function DashboardPage() {
     managers.map((m) => listFeedbackForManager(m.code, FEEDBACK_CYCLE)),
   );
 
+  // Names in code order, so the first name shown is the employee a click opens.
+  const nameOf = new Map(employees.map((e) => [e.code, e.name]));
+  const namesFor = (codes: string[], fallback: string[] = []) =>
+    codes.length ? codes.map((c) => nameOf.get(c) ?? c) : fallback;
+
   /* Follow-ups: every open item against today. */
   const open = followups
     .filter((f) => f.status === "Open")
@@ -38,7 +43,8 @@ export default async function DashboardPage() {
       meetingId: f.meetingId,
       item: f.item,
       targetDate: f.targetDate,
-      people: f.employeeNames ?? [],
+      people: namesFor(f.employeeCodes, f.employeeNames),
+      codes: f.employeeCodes,
       days: daysBetween(today, f.targetDate), // negative = days late
     }))
     .sort((a, b) => a.days - b.days);
@@ -89,7 +95,8 @@ export default async function DashboardPage() {
     recent: meetings.slice(0, 5).map((m) => ({
       id: m.id,
       date: m.meetingDate,
-      people: m.employeeNames ?? [],
+      people: namesFor(m.employeeCodes, m.employeeNames),
+      codes: m.employeeCodes,
       department: m.department,
       team: m.team,
       type: m.meetingType,
@@ -100,6 +107,8 @@ export default async function DashboardPage() {
     feedback,
     cycle: FEEDBACK_CYCLE,
     canCreate: canCreateMeetings(user.role),
+    canAnalytics: canAccessView(user.role, "analytics"),
+    canFeedback: canAccessView(user.role, "feedback"),
   };
 
   return <DashboardView data={data} />;

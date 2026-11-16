@@ -20,6 +20,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { LangToggle, useT } from "@/components/i18n/lang";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/format";
 import type { AppView } from "@/types";
@@ -37,16 +38,16 @@ const ICONS: Record<AppView, Icon> = {
   admin: Shield,
 };
 
-const GROUPS: Array<{ label: string; views: AppView[] }> = [
-  { label: "Casework", views: ["dashboard", "meetings", "follow-ups", "employees"] },
-  { label: "People", views: ["directory", "feedback"] },
-  { label: "Insight", views: ["analytics"] },
-  { label: "Workspace", views: ["admin"] },
+const GROUPS: Array<{ label: string; labelAr: string; views: AppView[] }> = [
+  { label: "Casework", labelAr: "الحالات", views: ["dashboard", "meetings", "follow-ups", "employees"] },
+  { label: "People", labelAr: "الأشخاص", views: ["directory", "feedback"] },
+  { label: "Insight", labelAr: "الرؤى", views: ["analytics"] },
+  { label: "Workspace", labelAr: "مساحة العمل", views: ["admin"] },
 ];
 
 const STORAGE_KEY = "er-sidebar-collapsed";
 
-type NavItem = { view: AppView; label: string; href: string };
+type NavItem = { view: AppView; label: string; labelAr: string; href: string };
 
 /** The product mark: two linked rings, the relation between employee and organisation. */
 export function BrandMark({ className }: { className?: string }) {
@@ -80,10 +81,11 @@ function NavList({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const t = useT();
   const byView = new Map(items.map((i) => [i.view, i]));
 
   return (
-    <nav aria-label="Sections" className="flex flex-col">
+    <nav aria-label={t("Sections", "الأقسام")} className="flex flex-col">
       {GROUPS.map((group, gi) => {
         const groupItems = group.views
           .map((v) => byView.get(v))
@@ -92,7 +94,7 @@ function NavList({
         return (
           <div key={group.label} className={cn(gi > 0 && (collapsed ? "mt-3 border-t border-line pt-3" : "mt-5"))}>
             {!collapsed ? (
-              <p className="mb-1.5 px-2.5 text-[12px] text-faint">{group.label}</p>
+              <p className="mb-1.5 px-2.5 text-[12px] text-faint">{t(group.label, group.labelAr)}</p>
             ) : null}
             <ul className={cn("flex flex-col gap-0.5", collapsed && "items-center")}>
               {groupItems.map((item) => {
@@ -103,9 +105,14 @@ function NavList({
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      title={collapsed ? item.label : undefined}
+                      title={collapsed ? t(item.label, item.labelAr) : undefined}
                       aria-label={
-                        showCount ? `${item.label}, ${overdueCount} overdue` : item.label
+                        showCount
+                          ? t(
+                              `${item.label}, ${overdueCount} overdue`,
+                              `${item.labelAr}، ${overdueCount} متأخرة`,
+                            )
+                          : t(item.label, item.labelAr)
                       }
                       aria-current={active ? "page" : undefined}
                       onClick={onNavigate}
@@ -120,15 +127,15 @@ function NavList({
                       <Icon className="size-4 shrink-0" strokeWidth={1.6} />
                       {!collapsed ? (
                         <>
-                          <span className="flex-1 truncate">{item.label}</span>
+                          <span className="flex-1 truncate">{t(item.label, item.labelAr)}</span>
                           {showCount ? (
                             <span className="num text-[12px] font-medium text-risk">
-                              {overdueCount} late
+                              {t(`${overdueCount} late`, `${overdueCount} متأخرة`)}
                             </span>
                           ) : null}
                         </>
                       ) : showCount ? (
-                        <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-risk" />
+                        <span className="absolute top-1.5 end-1.5 size-1.5 rounded-full bg-risk" />
                       ) : null}
                     </Link>
                   </li>
@@ -151,11 +158,12 @@ function UserRow({
   roleLabel: string;
   collapsed: boolean;
 }) {
+  const t = useT();
   const signOutButton = (
     <button
       type="button"
-      aria-label="Sign out"
-      title="Sign out"
+      aria-label={t("Sign out", "تسجيل الخروج")}
+      title={t("Sign out", "تسجيل الخروج")}
       className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-muted outline-none transition-colors hover:bg-active hover:text-ink"
       onClick={() => signOut({ callbackUrl: "/login" })}
     >
@@ -209,6 +217,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const t = useT();
   const [collapsed, setCollapsed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -250,7 +259,7 @@ export function AppShell({
           {!collapsed ? (
             <div className="min-w-0 leading-tight">
               <p className="truncate text-[14px] font-semibold text-ink">Relations Hub</p>
-              <p className="truncate text-[12px] text-muted">Employee Relations</p>
+              <p className="truncate text-[12px] text-muted">{t("Employee Relations", "علاقات الموظفين")}</p>
             </div>
           ) : null}
         </div>
@@ -266,10 +275,10 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar — shares the frame ground, no rule */}
-        <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 bg-bg px-3 md:static md:pr-3 md:pl-0">
+        <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 bg-bg px-3 md:static md:pe-3 md:ps-0">
           <button
             type="button"
-            aria-label="Open menu"
+            aria-label={t("Open menu", "فتح القائمة")}
             className={cn(iconButton, "md:hidden")}
             onClick={() => setMenuOpen(true)}
           >
@@ -277,7 +286,11 @@ export function AppShell({
           </button>
           <button
             type="button"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={
+              collapsed
+                ? t("Expand sidebar", "توسيع الشريط الجانبي")
+                : t("Collapse sidebar", "طيّ الشريط الجانبي")
+            }
             className={cn(iconButtonBase, "hidden md:inline-flex")}
             onClick={toggle}
           >
@@ -292,16 +305,19 @@ export function AppShell({
             <span className="hidden text-faint sm:inline" aria-hidden>
               /
             </span>
-            <span className="truncate font-medium text-ink">{current?.label ?? ""}</span>
+            <span className="truncate font-medium text-ink">
+              {current ? t(current.label, current.labelAr) : ""}
+            </span>
           </p>
-          <div className="ml-auto flex items-center gap-1">
-            <span className="num mr-2 hidden text-[13px] text-muted sm:inline">{todayLabel}</span>
+          <div className="ms-auto flex items-center gap-1">
+            <span className="num me-2 hidden text-[13px] text-muted sm:inline">{todayLabel}</span>
+            <LangToggle className="inline-flex h-8 cursor-pointer items-center justify-center rounded-[6px] px-2 text-[12px] font-medium text-muted outline-none transition-colors hover:bg-active hover:text-ink" />
             <ThemeToggle />
           </div>
         </header>
 
         {/* The sheet */}
-        <main className="min-w-0 flex-1 bg-surface px-4 py-6 md:mr-2 md:mb-2 md:rounded-[var(--radius-sheet)] md:border md:border-line md:px-8 md:py-7">
+        <main className="min-w-0 flex-1 bg-surface px-4 py-6 md:me-2 md:mb-2 md:rounded-[var(--radius-sheet)] md:border md:border-line md:px-8 md:py-7">
           <div className="page-stack w-full">{children}</div>
         </main>
       </div>
@@ -317,14 +333,14 @@ export function AppShell({
             transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}
             role="dialog"
             aria-modal="true"
-            aria-label="Menu"
+            aria-label={t("Menu", "القائمة")}
           >
             <div className="flex h-10 items-center gap-2.5 px-1">
               <BrandMark className="size-7" />
               <p className="flex-1 text-[15px] font-semibold">Relations Hub</p>
               <button
                 type="button"
-                aria-label="Close menu"
+                aria-label={t("Close menu", "إغلاق القائمة")}
                 className={iconButton}
                 onClick={() => setMenuOpen(false)}
               >

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import type { T } from "@/lib/i18n";
+import { getT } from "@/lib/i18n-server";
 import { canManageUsers } from "@/lib/rbac";
 import {
   importDirectory,
@@ -37,8 +39,11 @@ const employeeSchema = z.object({
 });
 
 async function requireAdmin(): Promise<string | null> {
+  const t = await getT();
   const session = await auth();
-  if (!session?.user || !canManageUsers(session.user.role)) return "Admin access required.";
+  if (!session?.user || !canManageUsers(session.user.role)) {
+    return t("Admin access required.", "تتطلب صلاحية المسؤول.");
+  }
   return null;
 }
 
@@ -48,25 +53,33 @@ function refresh() {
   }
 }
 
-function dbError(error: unknown): string {
+function dbError(error: unknown, t: T): string {
   const msg = error instanceof Error ? error.message : String(error);
   if (/employees_manager_code_fkey|foreign key/i.test(msg)) {
-    return "That manager code does not exist. Add the manager first.";
+    return t(
+      "That manager code does not exist. Add the manager first.",
+      "رمز المدير غير موجود. أضف المدير أولاً.",
+    );
   }
   return msg;
 }
 
 export async function saveManagerAction(input: ManagerRecord): Promise<Result> {
+  const t = await getT();
   const denied = await requireAdmin();
   if (denied) return { ok: false, error: denied };
   const parsed = managerSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   await upsertManager({ ...parsed.data, code: parsed.data.code.toUpperCase() });
   refresh();
-  return { ok: true, message: `Manager ${parsed.data.name} saved.` };
+  return {
+    ok: true,
+    message: t(`Manager ${parsed.data.name} saved.`, `تم حفظ المدير ${parsed.data.name}.`),
+  };
 }
 
 export async function saveEmployeeAction(input: DirectoryRow): Promise<Result> {
+  const t = await getT();
   const denied = await requireAdmin();
   if (denied) return { ok: false, error: denied };
   const parsed = employeeSchema.safeParse(input);
@@ -78,21 +91,26 @@ export async function saveEmployeeAction(input: DirectoryRow): Promise<Result> {
       managerCode: parsed.data.managerCode.toUpperCase(),
     });
   } catch (error) {
-    return { ok: false, error: dbError(error) };
+    return { ok: false, error: dbError(error, t) };
   }
   refresh();
-  return { ok: true, message: `${parsed.data.name} saved.` };
+  return { ok: true, message: t(`${parsed.data.name} saved.`, `تم حفظ ${parsed.data.name}.`) };
 }
 
 export async function setEmployeeStatusAction(
   employeeCode: string,
   status: "Active" | "Inactive",
 ): Promise<Result> {
+  const t = await getT();
   const denied = await requireAdmin();
   if (denied) return { ok: false, error: denied };
   await setEmployeeStatus(employeeCode, status);
   refresh();
-  return { ok: true, message: `Status set to ${status}.` };
+  const statusLabel = status === "Active" ? t("Active", "نشط") : t("Inactive", "غير نشط");
+  return {
+    ok: true,
+    message: t(`Status set to ${statusLabel}.`, `تم تعيين الحالة إلى ${statusLabel}.`),
+  };
 }
 
 /* ---------- CSV import ---------- */
@@ -143,16 +161,30 @@ function parseCsv(input: string): string[][] {
 }
 
 export async function importDirectoryAction(csv: string): Promise<Result> {
+  const t = await getT();
   const denied = await requireAdmin();
   if (denied) return { ok: false, error: denied };
 
   const rows = parseCsv(csv);
-  if (rows.length < 2) return { ok: false, error: "Paste a header row and at least one employee." };
+  if (rows.length < 2) {
+    return {
+      ok: false,
+      error: t("Paste a header row and at least one employee.", "الصق صف العناوين وموظفاً واحداً على الأقل."),
+    };
+  }
 
   const header = rows[0].map((h) => h.toLowerCase().replace(/[\s-]+/g, "_"));
   const missing = DIRECTORY_COLUMNS.filter((c) => c !== "status" && !header.includes(c));
   if (missing.length) {
-    return { ok: false, error: `Missing column${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.` };
+    const many = missing.length > 1;
+    const list = missing.join(", ");
+    return {
+      ok: false,
+      error: t(
+        `Missing column${many ? "s" : ""}: ${list}.`,
+        `${many ? "الأعمدة المفقودة" : "العمود المفقود"}: ${list}.`,
+      ),
+    };
   }
   const col = (r: string[], name: string) => r[header.indexOf(name)] ?? "";
 
@@ -183,7 +215,15 @@ export async function importDirectoryAction(csv: string): Promise<Result> {
     if (!e.success) return { ok: false, error: `Line ${line}: ${e.error.issues[0].message}` };
 
     const empCode = e.data.code.toUpperCase();
-    if (seen.has(empCode)) return { ok: false, error: `Line ${line}: employee code ${empCode} appears twice.` };
+    if (seen.has(empCode)) {
+      return {
+        ok: false,
+        error: t(
+          `Line ${line}: employee code ${empCode} appears twice.`,
+          `السطر ${line}: رمز الموظف ${empCode} مكرر.`,
+        ),
+      };
+    }
     seen.add(empCode);
 
     const mgrCode = m.data.code.toUpperCase();
@@ -196,9 +236,12 @@ export async function importDirectoryAction(csv: string): Promise<Result> {
     refresh();
     return {
       ok: true,
-      message: `Imported ${result.employees} employee${result.employees === 1 ? "" : "s"} (${result.created} new) and ${result.managers} manager${result.managers === 1 ? "" : "s"}.`,
+      message: t(
+        `Imported ${result.employees} employee${result.employees === 1 ? "" : "s"} (${result.created} new) and ${result.managers} manager${result.managers === 1 ? "" : "s"}.`,
+        `تم استيراد ${result.employees} موظف (${result.created} جديد) و${result.managers} مدير.`,
+      ),
     };
   } catch (error) {
-    return { ok: false, error: dbError(error) };
+    return { ok: false, error: dbError(error, t) };
   }
 }
