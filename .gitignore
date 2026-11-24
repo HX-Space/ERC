@@ -48,3 +48,5 @@ next-env.d.ts
 # client test data (contains test passwords)
 /db/client-test-data.sql
 /db/client-test-cleanup.sql
+# Editor settings (may hold connection details)
+/.vscode/
