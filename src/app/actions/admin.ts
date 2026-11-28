@@ -9,6 +9,7 @@ import { listManagers } from "@/repositories/employees";
 import {
   createUser,
   setUserActive,
+  setUserPassword,
   updateUserRole,
 } from "@/repositories/users";
 import type { UserRole } from "@/types";
@@ -112,5 +113,22 @@ export async function setUserActiveAction(id: string, isActive: boolean): Promis
   }
   await setUserActive(id, isActive);
   revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function resetUserPasswordAction(id: string, password: string): Promise<Result> {
+  const t = await getT();
+  if (!(await adminSession())) {
+    return { ok: false, error: t("Admin access required.", "تتطلب صلاحية المسؤول.") };
+  }
+  if (typeof password !== "string" || password.length < 10) {
+    return {
+      ok: false,
+      error: t("New password: at least 10 characters.", "كلمة المرور الجديدة: 10 أحرف على الأقل."),
+    };
+  }
+  if (!(await setUserPassword(id, password))) {
+    return { ok: false, error: t("User not found.", "المستخدم غير موجود.") };
+  }
   return { ok: true };
 }

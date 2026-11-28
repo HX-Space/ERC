@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createUserAction,
+  resetUserPasswordAction,
   setUserActiveAction,
   updateUserRoleAction,
 } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { useToast } from "@/components/ui/toast";
@@ -34,6 +36,27 @@ export function AdminView({
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("ER");
   const [managerCode, setManagerCode] = useState("");
+  const [resetting, setResetting] = useState<UserRecord | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  function closeReset() {
+    setResetting(null);
+    setNewPassword("");
+  }
+
+  async function resetPassword() {
+    if (!resetting) return;
+    setSaving(true);
+    const result = await resetUserPasswordAction(resetting.id, newPassword);
+    setSaving(false);
+    if (!result.ok) {
+      toast(result.error);
+      return;
+    }
+    toast(t(`Password reset for ${resetting.name}.`, `تمت إعادة تعيين كلمة المرور لـ ${resetting.name}.`));
+    closeReset();
+  }
 
   async function createUser() {
     const result = await createUserAction({
@@ -185,6 +208,17 @@ export function AdminView({
                     </Pill>
                   </td>
                   <td className="px-3 py-3">
+                    <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      aria-label={t(`Reset password for ${u.name}`, `إعادة تعيين كلمة المرور لـ ${u.name}`)}
+                      onClick={() => {
+                        setNewPassword("");
+                        setResetting(u);
+                      }}
+                    >
+                      {t("Reset password", "إعادة تعيين كلمة المرور")}
+                    </Button>
                     <Button
                       size="sm"
                       variant={u.isActive ? "danger" : "primary"}
@@ -207,6 +241,7 @@ export function AdminView({
                     >
                       {u.isActive ? t("Disable", "تعطيل") : t("Enable", "تفعيل")}
                     </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -214,6 +249,55 @@ export function AdminView({
           </table>
         </div>
       </Panel>
+
+      <Drawer
+        open={Boolean(resetting)}
+        title={t("Reset password", "إعادة تعيين كلمة المرور")}
+        onClose={closeReset}
+        width={480}
+        footer={
+          <>
+            <Button aria-label={t("Cancel password reset", "إلغاء إعادة تعيين كلمة المرور")} onClick={closeReset}>
+              {t("Cancel", "إلغاء")}
+            </Button>
+            <Button
+              variant="primary"
+              aria-label={t("Save new password", "حفظ كلمة المرور الجديدة")}
+              disabled={saving}
+              onClick={resetPassword}
+            >
+              {saving ? t("Saving…", "جارٍ الحفظ…") : t("Save new password", "حفظ كلمة المرور الجديدة")}
+            </Button>
+          </>
+        }
+      >
+        {resetting ? (
+          <div className="space-y-4">
+            <div>
+              <p className="font-medium">{resetting.name}</p>
+              <p className="text-sm text-muted" dir="ltr">
+                {resetting.email}
+              </p>
+            </div>
+            <Field label={t("New temporary password", "كلمة مرور مؤقتة جديدة")}>
+              <input
+                type="text"
+                dir="ltr"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="rounded-lg border border-line-2 bg-surface px-3 py-2 outline-none"
+              />
+            </Field>
+            <p className="text-xs text-muted">
+              {t(
+                "At least 10 characters. Share it with the user privately and ask them to keep it safe.",
+                "10 أحرف على الأقل. شاركها مع المستخدم بشكل خاص واطلب منه الحفاظ عليها.",
+              )}
+            </p>
+          </div>
+        ) : null}
+      </Drawer>
     </>
   );
 }

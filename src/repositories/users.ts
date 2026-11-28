@@ -83,6 +83,16 @@ export async function setUserActive(
   return mapUser(result.rows[0]);
 }
 
+/** Replaces the password. Returns false when no user has this id. */
+export async function setUserPassword(id: string, password: string): Promise<boolean> {
+  const hash = await bcrypt.hash(password, 10);
+  const result = await query(
+    `UPDATE employee_relations_users SET password_hash = $2, updated_at = NOW() WHERE id = $1`,
+    [id, hash],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
 export async function countUsers(): Promise<number> {
   const result = await query<{ n: string }>(`SELECT count(*)::text AS n FROM employee_relations_users`);
   return Number(result.rows[0]?.n ?? 0);
