@@ -109,6 +109,7 @@ export default async function DashboardPage() {
     canCreate: canCreateMeetings(user.role),
     canAnalytics: canAccessView(user.role, "analytics"),
     canFeedback: canAccessView(user.role, "feedback"),
+    canMeetings: canAccessView(user.role, "meetings"),
   };
 
   return <DashboardView data={data} />;

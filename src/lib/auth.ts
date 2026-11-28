@@ -64,6 +64,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id!;
         token.role = (user as { role: UserRole }).role;
         token.managerCode = (user as { managerCode: string | null }).managerCode;
+        return token;
+      }
+      // Re-read the account on every request, so disabling a user or changing their role
+      // takes effect at once instead of when the 30-day session expires.
+      if (!token.id) return null;
+      try {
+        const { rows } = await query<{ name: string; role: UserRole; manager_code: string | null; is_active: boolean }>(
+          `SELECT name, role, manager_code, is_active FROM employee_relations_users WHERE id = $1`,
+          [token.id],
+        );
+        const account = rows[0];
+        if (!account || !account.is_active) return null; // signed out
+        token.name = account.name;
+        token.role = account.role;
+        token.managerCode = account.manager_code;
+      } catch {
+        // Database briefly unreachable: keep the current session rather than signing everyone out.
       }
       return token;
     },

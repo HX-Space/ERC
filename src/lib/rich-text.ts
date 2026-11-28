@@ -19,9 +19,8 @@ const ENTITIES: Record<string, string> = {
 export function htmlToText(value: string): string {
   if (!value || !isHtml(value)) return value ?? "";
   return value
-    .replace(/<li[^>]*data-checked="true"[^>]*>/gi, "\n[x] ")
-    .replace(/<li[^>]*data-checked="false"[^>]*>/gi, "\n[ ] ")
-    .replace(/<li[^>]*>/gi, "\n- ")
+    // One line per list or checklist item, without markers: this text feeds AI follow-up suggestions.
+    .replace(/<li[^>]*>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|h[1-6]|blockquote|div)>/gi, "\n")
     .replace(/<[^>]+>/g, "")

@@ -7,7 +7,9 @@ import type { T } from "@/lib/i18n";
 import { getT } from "@/lib/i18n-server";
 import { canManageUsers } from "@/lib/rbac";
 import {
+  getEmployee,
   importDirectory,
+  listManagers,
   setEmployeeStatus,
   upsertEmployee,
   upsertManager,
@@ -70,7 +72,14 @@ export async function saveManagerAction(input: ManagerRecord): Promise<Result> {
   if (denied) return { ok: false, error: denied };
   const parsed = managerSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  await upsertManager({ ...parsed.data, code: parsed.data.code.toUpperCase() });
+  const code = parsed.data.code.toUpperCase();
+  if ((await listManagers()).some((m) => m.code === code)) {
+    return {
+      ok: false,
+      error: t(`Manager code ${code} already exists. Use a new code.`, `رمز المدير ${code} موجود بالفعل. استخدم رمزاً جديداً.`),
+    };
+  }
+  await upsertManager({ ...parsed.data, code });
   refresh();
   return {
     ok: true,
@@ -84,6 +93,16 @@ export async function saveEmployeeAction(input: DirectoryRow): Promise<Result> {
   if (denied) return { ok: false, error: denied };
   const parsed = employeeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  const existing = await getEmployee(parsed.data.code.toUpperCase());
+  if (existing) {
+    return {
+      ok: false,
+      error: t(
+        `Employee code ${existing.code} already belongs to ${existing.name}. Use a new code.`,
+        `رمز الموظف ${existing.code} مستخدم بالفعل للموظف ${existing.name}. استخدم رمزاً جديداً.`,
+      ),
+    };
+  }
   try {
     await upsertEmployee({
       ...parsed.data,

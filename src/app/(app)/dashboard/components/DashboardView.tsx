@@ -55,6 +55,7 @@ export interface DashboardData {
   canCreate: boolean;
   canAnalytics: boolean;
   canFeedback: boolean;
+  canMeetings: boolean;
 }
 
 /** History for the first employee on a record. */
@@ -237,6 +238,8 @@ function DueLine({ items: all, today, t, lang }: { items: DueItem[]; today: stri
 /* ---------- View ---------- */
 
 export async function DashboardView({ data }: { data: DashboardData }) {
+  // HR can't open Meetings; send it to Analytics, which counts the same meetings.
+  const meetingsHref = data.canMeetings ? "/meetings" : "/analytics";
   const t = await getT();
   const lang = await getLang();
 
@@ -311,7 +314,7 @@ export async function DashboardView({ data }: { data: DashboardData }) {
             }
           />
         </Link>
-        <Link href="/meetings" className="block border-e transition-colors hover:bg-surface-2">
+        <Link href={meetingsHref} className="block border-e transition-colors hover:bg-surface-2">
           <KpiBody
             label={t("Meetings, last 30 days", "الاجتماعات خلال آخر 30 يوماً")}
             value={data.meetingsLast30}
@@ -438,7 +441,7 @@ export async function DashboardView({ data }: { data: DashboardData }) {
         <Panel className="xl:col-span-2">
           <PanelHeader title={t("Recent meetings", "الاجتماعات الأخيرة")}>
             <Link
-              href="/meetings"
+              href={meetingsHref}
               className="inline-flex items-center gap-1 text-[13px] font-medium text-ink hover:text-accent"
             >
               {t(`All ${data.totalMeetings}`, `الكل ${data.totalMeetings}`)}
